@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 대시보드 - Monter Front</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <!-- 상단 네비게이션 바 -->
+    <nav class="top-nav">
+        <div class="nav-left">
+            <div id="menu-toggle" class="hamburger">☰</div>
+            <div class="nav-logo">MONTER</div>
+        </div>
+        <div class="nav-right">
+            <div class="user-profile" id="profile-btn">
+                <span id="display-user-name">관리자</span>님
+                <div class="dropdown" id="user-dropdown">
+                    <div class="dropdown-item user-info">
+                        <strong id="info-name">관리자</strong>
+                        <span class="role">마스터 권한</span>
+                    </div>
+                    <hr>
+                    <div class="dropdown-item">프로필 수정</div>
+                    <div class="dropdown-item" id="logout-btn">로그아웃</div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="wrapper">
+        <!-- 사이드바 -->
+        <aside class="sidebar" id="sidebar">
+            <ul class="menu-list">
+                <li class="menu-item active" data-page="notice">공지사항</li>
+                <li class="menu-item" data-page="faq">자주묻는 질문</li>
+                <li class="menu-item" data-page="account">계정관리</li>
+                <li class="menu-item" data-page="ad">광고관리</li>
+                <li class="menu-item" data-page="settlement">정산로그</li>
+            </ul>
+        </aside>
+
+        <!-- 메인 컨텐츠 영역 -->
+        <main class="content">
+            <h2 id="page-title">로딩 중...</h2>
+            <div id="page-content">
+                <!-- 컨텐츠가 여기에 로드됩니다 -->
+            </div>
+        </main>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
+

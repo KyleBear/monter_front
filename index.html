@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - Monter Front</title>
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="logo-area">MONTER</div>
+            <form id="loginForm">
+                <input type="text" id="username" placeholder="아이디" required>
+                <input type="password" id="password" placeholder="비밀번호" required>
+                <div class="options">
+                    <label>
+                        <input type="checkbox" id="rememberMe"> 아이디 기억하기
+                    </label>
+                </div>
+                <button type="submit">로그인</button>
+            </form>
+            <div id="message"></div>
+        </div>
+    </div>
+    <script src="js/login.js"></script>
+</body>
+</html>

@@ -1,5 +1,11 @@
+import { initAccountPage } from './pages/account.js';
+import { initNoticePage } from './pages/notice.js';
+import { initFAQPage } from './pages/faq.js';
+import { initAdPage } from './pages/ad.js';
+import { initSettlementPage } from './pages/settlement.js';
+
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. 로그인 체크 (비정상 접근 방지)
+    // 1. 로그인 체크
     const isLoggedIn = sessionStorage.getItem('isLoggedIn');
     if (!isLoggedIn) {
         alert('로그인이 필요합니다.');
@@ -16,36 +22,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileBtn = document.getElementById('profile-btn');
     const dropdown = document.getElementById('user-dropdown');
     
-    profileBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle('show');
-    });
+    if (profileBtn) {
+        profileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('show');
+        });
+    }
 
     window.addEventListener('click', () => dropdown.classList.remove('show'));
 
     // 4. 로그아웃
-    document.getElementById('logout-btn').addEventListener('click', () => {
-        sessionStorage.clear();
-        location.href = 'index.html';
-    });
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            sessionStorage.clear();
+            location.href = 'index.html';
+        });
+    }
 
-    // 5. 사이드바 메뉴 및 컨텐츠 전환 (Partial SPA 방식)
+    // 5. 사이드바 메뉴 및 컨텐츠 전환 (라우팅)
     const menuItems = document.querySelectorAll('.menu-item');
     const pageTitle = document.getElementById('page-title');
     const pageContent = document.getElementById('page-content');
 
     const loadContent = (pageKey, pageName) => {
         pageTitle.textContent = pageName;
-        // 실제 구현 시 여기서 fetch() 등을 사용해 페이지 내용을 가져올 수 있습니다.
-        pageContent.innerHTML = `
-            <div class="content-card">
-                <h3>${pageName} 화면</h3>
-                <p>${pageName} 관련 데이터와 리스트가 여기에 표시됩니다.</p>
-                <div style="margin-top: 20px; padding: 20px; border: 1px dashed #ccc; border-radius: 8px; text-align: center; color: #999;">
-                    [ ${pageName} 컨텐츠 영역 ]
-                </div>
-            </div>
-        `;
+        
+        switch (pageKey) {
+            case 'notice':
+                initNoticePage(pageContent);
+                break;
+            case 'faq':
+                initFAQPage(pageContent);
+                break;
+            case 'account':
+                initAccountPage(pageContent);
+                break;
+            case 'ad':
+                initAdPage(pageContent);
+                break;
+            case 'settlement':
+                initSettlementPage(pageContent);
+                break;
+            default:
+                pageContent.innerHTML = `<p>${pageName} 화면을 준비 중입니다.</p>`;
+        }
     };
 
     menuItems.forEach(item => {
@@ -59,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 초기 로드 (공지사항)
+    // 초기 로드 (공지사항 또는 활성화된 메뉴)
     const activeMenu = document.querySelector('.menu-item.active');
     if (activeMenu) {
         loadContent(activeMenu.getAttribute('data-page'), activeMenu.textContent);
@@ -68,8 +89,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 6. 햄버거 메뉴 토글
     const menuToggle = document.getElementById('menu-toggle');
     const sidebar = document.getElementById('sidebar');
-    menuToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('collapsed');
-    });
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+    }
 });
-

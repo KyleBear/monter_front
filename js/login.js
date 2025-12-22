@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionStorage.setItem('userName', result.data.username);
                 sessionStorage.setItem('userId', result.data.user_id);  // user_id 저장 추가
                 sessionStorage.setItem('userRole', result.data.role);    // role 저장 추가
+                sessionStorage.setItem('userAffiliation', result.data.affiliation || '');  // affiliation 저장 추가
                 sessionStorage.setItem('sessionToken', result.data.session_token); // 토큰 저장 추가
                 
                 location.href = 'main.html';

@@ -271,10 +271,66 @@ const initAccountEvents = () => {
     // 등록 사이드바 열기
     if (openRegBtn) {
         openRegBtn.addEventListener('click', () => {
+            // 현재 사용자 권한 가져오기
+            const currentUserRole = sessionStorage.getItem('userRole');
+            const roleSelect = document.getElementById('reg-role');
+            
+            // 권한에 따라 등록 가능한 옵션 설정
+            if (roleSelect) {
+                // 기존 옵션 모두 제거
+                roleSelect.innerHTML = '';
+                
+                let allowedRoles = [];
+                
+                if (currentUserRole === 'admin') {
+                    // 관리자: 모두 가능
+                    allowedRoles = [
+                        { value: 'total', label: '총판사' },
+                        { value: 'agency', label: '대행사' },
+                        { value: 'advertiser', label: '광고주' }
+                    ];
+                } else if (currentUserRole === 'total') {
+                    // 총판사: 총판사, 대행사, 광고주
+                    allowedRoles = [
+                        { value: 'total', label: '총판사' },
+                        { value: 'agency', label: '대행사' },
+                        { value: 'advertiser', label: '광고주' }
+                    ];
+                } else if (currentUserRole === 'agency') {
+                    // 대행사: 대행사, 광고주
+                    allowedRoles = [
+                        { value: 'agency', label: '대행사' },
+                        { value: 'advertiser', label: '광고주' }
+                    ];
+                } else if (currentUserRole === 'advertiser') {
+                    // 광고주: 광고주만
+                    allowedRoles = [
+                        { value: 'advertiser', label: '광고주' }
+                    ];
+                } else {
+                    // 권한이 없거나 알 수 없는 경우: 광고주만 (기본값)
+                    allowedRoles = [
+                        { value: 'advertiser', label: '광고주' }
+                    ];
+                }
+                
+                // 옵션 추가
+                allowedRoles.forEach(role => {
+                    const option = document.createElement('option');
+                    option.value = role.value;
+                    option.textContent = role.label;
+                    roleSelect.appendChild(option);
+                });
+                
+                // 첫 번째 옵션을 기본값으로 설정
+                if (allowedRoles.length > 0) {
+                    roleSelect.value = allowedRoles[0].value;
+                }
+            }
+            
             // 폼 초기화
             document.getElementById('reg-userid').value = '';
             document.getElementById('reg-password').value = '';
-            document.getElementById('reg-role').value = 'advertiser';
             document.getElementById('reg-memo').value = '';
             rightSidebar.classList.add('active');
         });
@@ -296,6 +352,13 @@ const initAccountEvents = () => {
             const password = document.getElementById('reg-password').value;
             const role = document.getElementById('reg-role').value;
             const memo = document.getElementById('reg-memo').value.trim();
+            
+            // 현재 사용자의 소속 가져오기
+            const currentUserAffiliation = sessionStorage.getItem('userAffiliation');
+            if (!currentUserAffiliation) {
+                alert('소속 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
+                return;
+            }
             
             // 유효성 검사
             if (!userid) {
@@ -323,6 +386,7 @@ const initAccountEvents = () => {
                         username: userid,
                         password: password,
                         role: role,
+                        affiliation: currentUserAffiliation,  // 현재 사용자의 소속 필수 전송
                         memo: memo || null
                     })
                 });
@@ -334,7 +398,11 @@ const initAccountEvents = () => {
                     // 폼 초기화
                     document.getElementById('reg-userid').value = '';
                     document.getElementById('reg-password').value = '';
-                    document.getElementById('reg-role').value = 'advertiser';
+                    // 권한 옵션은 등록 사이드바를 열 때 다시 설정되므로 여기서는 첫 번째 옵션으로 설정
+                    const roleSelect = document.getElementById('reg-role');
+                    if (roleSelect && roleSelect.options.length > 0) {
+                        roleSelect.value = roleSelect.options[0].value;
+                    }
                     document.getElementById('reg-memo').value = '';
                     
                     rightSidebar.classList.remove('active');

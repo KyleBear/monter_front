@@ -309,6 +309,8 @@ th {
     z-index: 90;
     padding: 30px;
     border-left: 1px solid #dee2e6;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .right-sidebar.active {

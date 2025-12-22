@@ -328,6 +328,13 @@ const initAccountEvents = () => {
                 }
             }
             
+            // 현재 사용자의 소속을 기본값으로 설정
+            const currentUserAffiliation = sessionStorage.getItem('userAffiliation');
+            const affiliationInput = document.getElementById('reg-affiliation');
+            if (affiliationInput) {
+                affiliationInput.value = currentUserAffiliation || '';
+            }
+            
             // 폼 초기화
             document.getElementById('reg-userid').value = '';
             document.getElementById('reg-password').value = '';
@@ -351,14 +358,8 @@ const initAccountEvents = () => {
             const userid = document.getElementById('reg-userid').value.trim();
             const password = document.getElementById('reg-password').value;
             const role = document.getElementById('reg-role').value;
+            const affiliation = document.getElementById('reg-affiliation').value.trim();
             const memo = document.getElementById('reg-memo').value.trim();
-            
-            // 현재 사용자의 소속 가져오기
-            const currentUserAffiliation = sessionStorage.getItem('userAffiliation');
-            if (!currentUserAffiliation) {
-                alert('소속 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
-                return;
-            }
             
             // 유효성 검사
             if (!userid) {
@@ -371,6 +372,10 @@ const initAccountEvents = () => {
             }
             if (password.length < 4) {
                 alert('비밀번호는 4자 이상 입력해주세요.');
+                return;
+            }
+            if (!affiliation) {
+                alert('소속을 입력해주세요.');
                 return;
             }
             
@@ -386,7 +391,7 @@ const initAccountEvents = () => {
                         username: userid,
                         password: password,
                         role: role,
-                        affiliation: currentUserAffiliation,  // 현재 사용자의 소속 필수 전송
+                        affiliation: affiliation,  // 입력한 소속 사용
                         memo: memo || null
                     })
                 });
@@ -403,6 +408,9 @@ const initAccountEvents = () => {
                     if (roleSelect && roleSelect.options.length > 0) {
                         roleSelect.value = roleSelect.options[0].value;
                     }
+                    // 소속은 현재 사용자의 소속으로 초기화
+                    const currentUserAffiliation = sessionStorage.getItem('userAffiliation');
+                    document.getElementById('reg-affiliation').value = currentUserAffiliation || '';
                     document.getElementById('reg-memo').value = '';
                     
                     rightSidebar.classList.remove('active');

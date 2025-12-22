@@ -85,6 +85,21 @@ export const initAccountPage = (container) => {
 // API 기본 URL 설정
 const API_BASE_URL = '/api';
 
+// 공통 헤더 생성 함수
+const getAuthHeaders = () => {
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    
+    // 세션 토큰 가져오기
+    const token = sessionStorage.getItem('sessionToken');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return headers;
+};
+
 // 계정 목록 로드
 const loadAccountList = async (searchParams = {}) => {
     try {
@@ -93,9 +108,7 @@ const loadAccountList = async (searchParams = {}) => {
         
         const response = await fetch(url, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: getAuthHeaders(),
         });
 
         if (response.ok) {
@@ -103,12 +116,25 @@ const loadAccountList = async (searchParams = {}) => {
             renderAccountTable(data.accounts || []);
             updateAccountStatus(data.stats || {});
         } else {
-            console.error('계정 목록 로드 실패:', response.status);
-            // API 실패 시 기본 데이터 유지
+            // 더 자세한 에러 정보 출력
+            let errorData = {};
+            try {
+                const errorText = await response.text();
+                errorData = errorText ? JSON.parse(errorText) : {};
+            } catch (e) {
+                errorData = { message: `서버 오류 (${response.status})` };
+            }
+            
+            console.error('계정 목록 로드 실패:', response.status, errorData);
+            
+            // 500 에러인 경우 사용자에게 알림
+            if (response.status === 500) {
+                alert(`계정 목록을 불러올 수 없습니다.\n오류: ${errorData.message || errorData.detail || '서버 내부 오류'}`);
+            }
         }
     } catch (error) {
         console.error('API 호출 오류:', error);
-        // 네트워크 오류 시 기본 데이터 유지
+        alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
     }
 };
 
@@ -264,9 +290,7 @@ const initAccountEvents = () => {
             try {
                 const response = await fetch(`${API_BASE_URL}/accounts`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({
                         username: userid,
                         password: password,
@@ -282,8 +306,17 @@ const initAccountEvents = () => {
                     // 계정 목록 새로고침
                     await loadAccountList();
                 } else {
-                    const error = await response.json().catch(() => ({ message: '알 수 없는 오류가 발생했습니다.' }));
-                    alert(`등록 실패: ${error.message || '서버 오류가 발생했습니다.'}`);
+                    // 더 자세한 에러 정보 출력
+                    let errorData = {};
+                    try {
+                        const errorText = await response.text();
+                        errorData = errorText ? JSON.parse(errorText) : {};
+                    } catch (e) {
+                        errorData = { message: `서버 오류 (${response.status})` };
+                    }
+                    
+                    console.error('등록 실패:', response.status, errorData);
+                    alert(`등록 실패: ${errorData.message || errorData.detail || '서버 오류가 발생했습니다.'}`);
                 }
             } catch (error) {
                 console.error('API 호출 오류:', error);
@@ -348,9 +381,7 @@ const initAccountEvents = () => {
                 // 여러 계정 삭제 (배열로 전송)
                 const response = await fetch(`${API_BASE_URL}/accounts`, {
                     method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({
                         account_ids: accountIds
                     })
@@ -360,8 +391,17 @@ const initAccountEvents = () => {
                     alert('선택한 계정이 삭제되었습니다.');
                     await loadAccountList();
                 } else {
-                    const error = await response.json().catch(() => ({ message: '삭제 실패' }));
-                    alert(`삭제 실패: ${error.message || '서버 오류가 발생했습니다.'}`);
+                    // 더 자세한 에러 정보 출력
+                    let errorData = {};
+                    try {
+                        const errorText = await response.text();
+                        errorData = errorText ? JSON.parse(errorText) : {};
+                    } catch (e) {
+                        errorData = { message: `서버 오류 (${response.status})` };
+                    }
+                    
+                    console.error('삭제 실패:', response.status, errorData);
+                    alert(`삭제 실패: ${errorData.message || errorData.detail || '서버 오류가 발생했습니다.'}`);
                 }
             } catch (error) {
                 console.error('삭제 API 호출 오류:', error);

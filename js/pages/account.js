@@ -82,8 +82,7 @@ export const initAccountPage = (container) => {
     initAccountEvents();
 };
 
-// API 기본 URL 설정
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config.js';
 
 // 공통 헤더 생성 함수
 const getAuthHeaders = () => {

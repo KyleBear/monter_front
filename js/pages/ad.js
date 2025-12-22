@@ -1,5 +1,4 @@
-// API 기본 URL 설정
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config.js';
 
 // 광고 상태 통계 업데이트
 const updateAdStatus = (stats) => {

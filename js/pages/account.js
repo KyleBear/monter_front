@@ -62,18 +62,7 @@ export const initAccountPage = (container) => {
                     </tr>
                 </thead>
                 <tbody id="account-list">
-                    <tr>
-                        <td class="checkbox-col"><input type="checkbox" class="row-check"></td>
-                        <td>1</td>
-                        <td>test_user</td>
-                        <td>****</td>
-                        <td>광고주</td>
-                        <td>본사</td>
-                        <td>10</td>
-                        <td>진행중</td>
-                        <td>-</td>
-                        <td><button style="padding: 2px 8px; font-size: 12px; cursor: pointer;">수정</button></td>
-                    </tr>
+                    <!-- 계정 목록이 여기에 동적으로 로드됩니다 -->
                 </tbody>
             </table>
         </div>
@@ -105,6 +94,8 @@ const loadAccountList = async (searchParams = {}) => {
         const queryString = new URLSearchParams(searchParams).toString();
         const url = `${API_BASE_URL}/accounts${queryString ? '?' + queryString : ''}`;
         
+        console.log('계정 목록 API 호출:', url);
+        
         const response = await fetch(url, {
             method: 'GET',
             headers: getAuthHeaders(),
@@ -112,6 +103,9 @@ const loadAccountList = async (searchParams = {}) => {
 
         if (response.ok) {
             const data = await response.json();
+            console.log('계정 목록 API 응답:', data);
+            console.log('계정 개수:', data.accounts?.length || 0);
+            
             renderAccountTable(data.accounts || []);
             updateAccountStatus(data.stats || {});
         } else {
@@ -157,12 +151,21 @@ const updateAccountStatus = (stats) => {
 // 계정 테이블 렌더링
 const renderAccountTable = (accounts) => {
     const tbody = document.getElementById('account-list');
-    if (!tbody) return;
+    console.log('renderAccountTable 호출, accounts:', accounts);
+    console.log('tbody 요소:', tbody);
+    
+    if (!tbody) {
+        console.error('account-list tbody를 찾을 수 없습니다.');
+        return;
+    }
 
-    if (accounts.length === 0) {
+    if (!accounts || accounts.length === 0) {
+        console.log('계정 데이터가 없습니다.');
         tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">등록된 계정이 없습니다.</td></tr>';
         return;
     }
+    
+    console.log('계정 테이블 렌더링 시작, 계정 수:', accounts.length);
 
     tbody.innerHTML = accounts.map((account, index) => {
         const roleMap = {

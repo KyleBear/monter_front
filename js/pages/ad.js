@@ -35,12 +35,21 @@ const updateAdStatus = (stats) => {
 // 광고 테이블 렌더링
 const renderAdTable = (ads) => {
     const tbody = document.getElementById('ad-list');
-    if (!tbody) return;
+    console.log('renderAdTable 호출, ads:', ads);
+    console.log('tbody 요소:', tbody);
+    
+    if (!tbody) {
+        console.error('ad-list tbody를 찾을 수 없습니다.');
+        return;
+    }
 
-    if (ads.length === 0) {
+    if (!ads || ads.length === 0) {
+        console.log('광고 데이터가 없습니다.');
         tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px;">등록된 광고가 없습니다.</td></tr>';
         return;
     }
+    
+    console.log('광고 테이블 렌더링 시작, 광고 수:', ads.length);
 
     const statusMap = {
         'normal': { text: '정상', color: '#28a745' },
@@ -83,6 +92,8 @@ const loadAdList = async (searchParams = {}) => {
         const queryString = new URLSearchParams(searchParams).toString();
         const url = `${API_BASE_URL}/advertisements${queryString ? '?' + queryString : ''}`;
         
+        console.log('광고 목록 API 호출:', url);
+        
         const response = await fetch(url, {
             method: 'GET',
             headers: getAuthHeaders(),
@@ -90,13 +101,25 @@ const loadAdList = async (searchParams = {}) => {
 
         if (response.ok) {
             const data = await response.json();
+            console.log('광고 목록 API 응답:', data);
+            console.log('광고 개수:', data.advertisements?.length || 0);
+            
             renderAdTable(data.advertisements || []);
             updateAdStatus(data.stats || {});
         } else {
-            console.error('광고 목록 로드 실패:', response.status);
+            let errorData = {};
+            try {
+                const errorText = await response.text();
+                errorData = errorText ? JSON.parse(errorText) : {};
+            } catch (e) {
+                errorData = { message: `서버 오류 (${response.status})` };
+            }
+            console.error('광고 목록 로드 실패:', response.status, errorData);
+            alert(`광고 목록을 불러올 수 없습니다.\n오류: ${errorData.message || errorData.detail || '서버 내부 오류'}`);
         }
     } catch (error) {
         console.error('API 호출 오류:', error);
+        alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
     }
 };
 

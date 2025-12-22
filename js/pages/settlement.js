@@ -136,12 +136,21 @@ export const initSettlementPage = (container) => {
 // 정산 로그 테이블 렌더링
 const renderSettlementTable = (settlements) => {
     const tbody = document.getElementById('settlement-list');
-    if (!tbody) return;
+    console.log('renderSettlementTable 호출, settlements:', settlements);
+    console.log('tbody 요소:', tbody);
+    
+    if (!tbody) {
+        console.error('settlement-list tbody를 찾을 수 없습니다.');
+        return;
+    }
 
-    if (settlements.length === 0) {
+    if (!settlements || settlements.length === 0) {
+        console.log('정산 로그 데이터가 없습니다.');
         tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">조회된 정산 로그가 없습니다.</td></tr>';
         return;
     }
+    
+    console.log('정산 로그 테이블 렌더링 시작, 로그 수:', settlements.length);
 
     const typeMap = {
         'order': '발주',
@@ -197,6 +206,9 @@ const loadSettlementList = async (params = {}) => {
 
         if (response.ok) {
             const data = await response.json();
+            console.log('정산 로그 API 응답:', data);
+            console.log('정산 로그 개수:', data.settlements?.length || 0);
+            
             renderSettlementTable(data.settlements || []);
             updateSettlementStats(data.stats || {});
             return data;

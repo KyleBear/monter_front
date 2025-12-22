@@ -120,11 +120,90 @@ export const initSettlementPage = (container) => {
     initSettlementEvents();
 };
 
+// API 기본 URL 설정
+const API_BASE_URL = '/api';
+
 const formatDate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+};
+
+// 정산 로그 테이블 렌더링
+const renderSettlementTable = (settlements) => {
+    const tbody = document.getElementById('settlement-list');
+    if (!tbody) return;
+
+    if (settlements.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">조회된 정산 로그가 없습니다.</td></tr>';
+        return;
+    }
+
+    const typeMap = {
+        'order': '발주',
+        'extend': '연장',
+        'refund': '환불'
+    };
+
+    tbody.innerHTML = settlements.map((settlement, index) => {
+        const period = settlement.period_start && settlement.period_end 
+            ? `${settlement.period_start} ~ ${settlement.period_end}`
+            : '-';
+        
+        return `
+            <tr data-settlement-id="${settlement.settlement_id || settlement.id}">
+                <td>${index + 1}</td>
+                <td>${typeMap[settlement.settlement_type] || settlement.settlement_type || '-'}</td>
+                <td>${settlement.agency_name || settlement.agency || '-'}</td>
+                <td>${settlement.advertiser_name || settlement.advertiser || '-'}</td>
+                <td>${settlement.quantity || 0}</td>
+                <td>${period}</td>
+                <td>${settlement.total_days || 0}</td>
+                <td>${settlement.created_at || '-'}</td>
+                <td>${settlement.start_date || '-'}</td>
+                <td><button class="btn-edit-row" data-settlement-id="${settlement.settlement_id || settlement.id}">수정</button></td>
+            </tr>
+        `;
+    }).join('');
+};
+
+// 정산 통계 업데이트
+const updateSettlementStats = (stats) => {
+    if (stats) {
+        if (stats.order_days !== undefined) document.getElementById('order-days').textContent = stats.order_days || 0;
+        if (stats.extend_days !== undefined) document.getElementById('extend-days').textContent = stats.extend_days || 0;
+        if (stats.refund_days !== undefined) document.getElementById('refund-days').textContent = stats.refund_days || 0;
+        if (stats.total_days !== undefined) document.getElementById('total-days').textContent = stats.total_days || 0;
+    }
+};
+
+// 정산 로그 목록 로드
+const loadSettlementList = async (params = {}) => {
+    try {
+        const queryString = new URLSearchParams(params).toString();
+        const url = `${API_BASE_URL}/settlement-logs${queryString ? '?' + queryString : ''}`;
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            renderSettlementTable(data.settlements || []);
+            updateSettlementStats(data.stats);
+            return data;
+        } else {
+            console.error('정산 로그 로드 실패:', response.status);
+            return { settlements: [], stats: {}, total: 0 };
+        }
+    } catch (error) {
+        console.error('API 호출 오류:', error);
+        return { settlements: [], stats: {}, total: 0 };
+    }
 };
 
 const initSettlementEvents = () => {
@@ -190,14 +269,27 @@ const initSettlementEvents = () => {
         lastPageBtn.disabled = currentPage === totalPages;
     };
 
-    const loadSettlementData = () => {
-        // 실제로는 API 호출하여 데이터를 가져와야 함
-        // 여기서는 샘플 데이터만 표시
+    const loadSettlementData = async () => {
         const startDate = startDateInput.value;
         const endDate = endDateInput.value;
+        const searchKeyword = document.querySelector('.search-input')?.value.trim() || '';
         
-        // 페이지네이션 계산 (샘플)
-        totalPages = Math.ceil(100 / itemsPerPage); // 예시: 총 100개 항목
+        const params = {
+            start_date: startDate,
+            end_date: endDate,
+            page: currentPage,
+            per_page: itemsPerPage
+        };
+        
+        if (searchKeyword) {
+            params.keyword = searchKeyword;
+        }
+        
+        const data = await loadSettlementList(params);
+        
+        // 페이지네이션 계산
+        totalPages = Math.ceil((data.total || 0) / itemsPerPage);
+        if (totalPages === 0) totalPages = 1;
         updatePagination();
     };
 
@@ -246,6 +338,37 @@ const initSettlementEvents = () => {
         itemsPerPage = parseInt(itemsPerPageSelect.value);
         currentPage = 1;
         loadSettlementData();
+    });
+
+    // 검색 버튼
+    const searchBtn = document.querySelector('.search-btn');
+    const searchInput = document.querySelector('.search-input');
+    
+    if (searchBtn) {
+        searchBtn.addEventListener('click', () => {
+            currentPage = 1;
+            loadSettlementData();
+        });
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                currentPage = 1;
+                loadSettlementData();
+            }
+        });
+    }
+
+    // 개별 수정 버튼
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-edit-row')) {
+            const settlementId = e.target.getAttribute('data-settlement-id');
+            if (settlementId) {
+                // 수정 기능은 추후 구현
+                alert(`정산 로그 ID ${settlementId} 수정 기능은 준비 중입니다.`);
+            }
+        }
     });
 
     // 초기 로드

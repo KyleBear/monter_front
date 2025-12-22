@@ -1,3 +1,27 @@
+import { API_BASE_URL } from '../config.js';
+
+// 공통 헤더 생성 함수
+const getAuthHeaders = () => {
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    
+    // 세션 토큰 가져오기
+    const token = sessionStorage.getItem('sessionToken');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return headers;
+};
+
+const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 export const initSettlementPage = (container) => {
     const today = new Date();
     const todayStr = formatDate(today);
@@ -78,18 +102,7 @@ export const initSettlementPage = (container) => {
                     </tr>
                 </thead>
                 <tbody id="settlement-list">
-                    <tr>
-                        <td>1</td>
-                        <td>발주</td>
-                        <td>대행사A</td>
-                        <td>광고주1</td>
-                        <td>10</td>
-                        <td>2025-12-01 ~ 2025-12-10</td>
-                        <td>10</td>
-                        <td>2025-12-19 10:30:00</td>
-                        <td>2025-12-01</td>
-                        <td><button class="btn-edit-row">수정</button></td>
-                    </tr>
+                    <!-- 정산 로그 목록이 여기에 동적으로 로드됩니다 -->
                 </tbody>
             </table>
         </div>
@@ -118,15 +131,6 @@ export const initSettlementPage = (container) => {
     `;
 
     initSettlementEvents();
-};
-
-import { API_BASE_URL } from '../config.js';
-
-const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
 };
 
 // 정산 로그 테이블 렌더링
@@ -161,7 +165,7 @@ const renderSettlementTable = (settlements) => {
                 <td>${settlement.total_days || 0}</td>
                 <td>${settlement.created_at || '-'}</td>
                 <td>${settlement.start_date || '-'}</td>
-                <td><button class="btn-edit-row" data-settlement-id="${settlement.settlement_id || settlement.id}">수정</button></td>
+                <td><!-- <button class="btn-edit-row" data-settlement-id="${settlement.settlement_id || settlement.id}">수정</button> --></td>
             </tr>
         `;
     }).join('');
@@ -185,22 +189,31 @@ const loadSettlementList = async (params = {}) => {
         
         const response = await fetch(url, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: getAuthHeaders(),
         });
 
         if (response.ok) {
             const data = await response.json();
             renderSettlementTable(data.settlements || []);
-            updateSettlementStats(data.stats);
+            updateSettlementStats(data.stats || {});
             return data;
         } else {
-            console.error('정산 로그 로드 실패:', response.status);
+            // 더 자세한 에러 정보 출력
+            let errorData = {};
+            try {
+                const errorText = await response.text();
+                errorData = errorText ? JSON.parse(errorText) : {};
+            } catch (e) {
+                errorData = { message: `서버 오류 (${response.status})` };
+            }
+            
+            console.error('정산 로그 로드 실패:', response.status, errorData);
+            alert(`정산 로그를 불러올 수 없습니다.\n오류: ${errorData.message || errorData.detail || '서버 내부 오류'}`);
             return { settlements: [], stats: {}, total: 0 };
         }
     } catch (error) {
         console.error('API 호출 오류:', error);
+        alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
         return { settlements: [], stats: {}, total: 0 };
     }
 };
@@ -359,16 +372,16 @@ const initSettlementEvents = () => {
         });
     }
 
-    // 개별 수정 버튼
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-edit-row')) {
-            const settlementId = e.target.getAttribute('data-settlement-id');
-            if (settlementId) {
-                // 수정 기능은 추후 구현
-                alert(`정산 로그 ID ${settlementId} 수정 기능은 준비 중입니다.`);
-            }
-        }
-    });
+    // 개별 수정 버튼 (주석처리)
+    // document.addEventListener('click', (e) => {
+    //     if (e.target.classList.contains('btn-edit-row')) {
+    //         const settlementId = e.target.getAttribute('data-settlement-id');
+    //         if (settlementId) {
+    //             // 수정 기능은 추후 구현
+    //             alert(`정산 로그 ID ${settlementId} 수정 기능은 준비 중입니다.`);
+    //         }
+    //     }
+    // });
 
     // 초기 로드
     updateDateRange();

@@ -1,5 +1,20 @@
 import { API_BASE_URL } from '../config.js';
 
+// 공통 헤더 생성 함수
+const getAuthHeaders = () => {
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    
+    // 세션 토큰 가져오기
+    const token = sessionStorage.getItem('sessionToken');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return headers;
+};
+
 // 광고 상태 통계 업데이트
 const updateAdStatus = (stats) => {
     const totalCount = document.getElementById('total-count');
@@ -70,9 +85,7 @@ const loadAdList = async (searchParams = {}) => {
         
         const response = await fetch(url, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: getAuthHeaders(),
         });
 
         if (response.ok) {
@@ -143,6 +156,7 @@ export const initAdPage = (container) => {
                 <button class="btn-register" style="background-color: #17a2b8;">수정</button>
                 <button class="btn-delete">삭제</button>
                 <button class="btn-extend" id="extend-btn">연장</button>
+                <button class="btn-register" id="open-register-btn">등록</button>
             </div>
         </div>
 
@@ -167,24 +181,64 @@ export const initAdPage = (container) => {
                     </tr>
                 </thead>
                 <tbody id="ad-list">
-                    <tr>
-                        <td class="checkbox-col"><input type="checkbox" class="row-check"></td>
-                        <td>1</td>
-                        <td>user_01</td>
-                        <td><span style="color: #28a745;">정상</span></td>
-                        <td>나이키 운동화</td>
-                        <td>Y</td>
-                        <td>N</td>
-                        <td>에어포스 1</td>
-                        <td>12345678</td>
-                        <td>87654321</td>
-                        <td>30</td>
-                        <td>2023-12-01</td>
-                        <td>2023-12-31</td>
-                        <td><button class="btn-edit-row">수정</button></td>
-                    </tr>
+                    <!-- 광고 목록이 여기에 동적으로 로드됩니다 -->
                 </tbody>
             </table>
+        </div>
+
+        <!-- 우측 등록 사이드바 -->
+        <div id="ad-right-sidebar" class="right-sidebar">
+            <h3>광고 등록</h3>
+            <div class="form-group">
+                <label>아이디</label>
+                <input type="text" id="ad-reg-userid" placeholder="아이디를 입력하세요">
+            </div>
+            <div class="form-group">
+                <label>메인키워드</label>
+                <input type="text" id="ad-reg-keyword" placeholder="메인키워드를 입력하세요">
+            </div>
+            <div class="form-group">
+                <label>상품명</label>
+                <input type="text" id="ad-reg-product-name" placeholder="상품명을 입력하세요">
+            </div>
+            <div class="form-group">
+                <label>상품MID</label>
+                <input type="text" id="ad-reg-product-mid" placeholder="상품MID를 입력하세요">
+            </div>
+            <div class="form-group">
+                <label>가격비교MID</label>
+                <input type="text" id="ad-reg-price-mid" placeholder="가격비교MID를 입력하세요">
+            </div>
+            <div class="form-group">
+                <label>가격비교</label>
+                <select id="ad-reg-price-comparison" class="search-select" style="width: 100%;">
+                    <option value="false">N</option>
+                    <option value="true">Y</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>플러스</label>
+                <select id="ad-reg-plus" class="search-select" style="width: 100%;">
+                    <option value="false">N</option>
+                    <option value="true">Y</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>작업일수</label>
+                <input type="number" id="ad-reg-work-days" placeholder="작업일수를 입력하세요" min="1">
+            </div>
+            <div class="form-group">
+                <label>시작일</label>
+                <input type="date" id="ad-reg-start-date">
+            </div>
+            <div class="form-group">
+                <label>종료일</label>
+                <input type="date" id="ad-reg-end-date">
+            </div>
+            <div class="form-actions">
+                <button id="ad-reg-submit-btn" class="btn-submit">등록</button>
+                <button id="ad-reg-close-btn" class="btn-close">닫기</button>
+            </div>
         </div>
     `;
 
@@ -223,6 +277,10 @@ const initAdEvents = () => {
     const extendBtn = document.getElementById('extend-btn');
     const deleteBtn = document.querySelector('.btn-delete');
     const editBtn = document.querySelector('.table-actions .btn-register');
+    const openRegBtn = document.getElementById('open-register-btn');
+    const adRightSidebar = document.getElementById('ad-right-sidebar');
+    const adRegCloseBtn = document.getElementById('ad-reg-close-btn');
+    const adRegSubmitBtn = document.getElementById('ad-reg-submit-btn');
     
     // 전체 선택 체크박스
     if (selectAll) {
@@ -237,6 +295,135 @@ const initAdEvents = () => {
 
     // 개별 체크박스 이벤트
     bindRowChecks();
+
+    // 등록 사이드바 열기
+    if (openRegBtn) {
+        openRegBtn.addEventListener('click', () => {
+            // 폼 초기화
+            document.getElementById('ad-reg-userid').value = '';
+            document.getElementById('ad-reg-keyword').value = '';
+            document.getElementById('ad-reg-product-name').value = '';
+            document.getElementById('ad-reg-product-mid').value = '';
+            document.getElementById('ad-reg-price-mid').value = '';
+            document.getElementById('ad-reg-price-comparison').value = 'false';
+            document.getElementById('ad-reg-plus').value = 'false';
+            document.getElementById('ad-reg-work-days').value = '';
+            
+            // 오늘 날짜를 기본값으로 설정
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('ad-reg-start-date').value = today;
+            document.getElementById('ad-reg-end-date').value = today;
+            
+            adRightSidebar.classList.add('active');
+        });
+    }
+
+    // 등록 사이드바 닫기
+    if (adRegCloseBtn) {
+        adRegCloseBtn.addEventListener('click', () => {
+            adRightSidebar.classList.remove('active');
+        });
+    }
+
+    // 광고 등록 폼 제출
+    if (adRegSubmitBtn) {
+        adRegSubmitBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            const userid = document.getElementById('ad-reg-userid').value.trim();
+            const keyword = document.getElementById('ad-reg-keyword').value.trim();
+            const productName = document.getElementById('ad-reg-product-name').value.trim();
+            const productMid = document.getElementById('ad-reg-product-mid').value.trim();
+            const priceMid = document.getElementById('ad-reg-price-mid').value.trim();
+            const priceComparison = document.getElementById('ad-reg-price-comparison').value === 'true';
+            const plus = document.getElementById('ad-reg-plus').value === 'true';
+            const workDays = parseInt(document.getElementById('ad-reg-work-days').value) || 0;
+            const startDate = document.getElementById('ad-reg-start-date').value;
+            const endDate = document.getElementById('ad-reg-end-date').value;
+            
+            // 유효성 검사
+            if (!userid) {
+                alert('아이디를 입력해주세요.');
+                return;
+            }
+            if (!keyword) {
+                alert('메인키워드를 입력해주세요.');
+                return;
+            }
+            if (!startDate || !endDate) {
+                alert('시작일과 종료일을 입력해주세요.');
+                return;
+            }
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('시작일은 종료일보다 이전이어야 합니다.');
+                return;
+            }
+            
+            // 등록 버튼 비활성화
+            adRegSubmitBtn.disabled = true;
+            adRegSubmitBtn.textContent = '등록 중...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/advertisements`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        username: userid,
+                        main_keyword: keyword,
+                        product_name: productName || null,
+                        product_mid: productMid || null,
+                        price_comparison_mid: priceMid || null,
+                        price_comparison: priceComparison,
+                        plus: plus,
+                        work_days: workDays,
+                        start_date: startDate,
+                        end_date: endDate
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    alert('광고가 등록되었습니다.');
+                    
+                    // 폼 초기화
+                    document.getElementById('ad-reg-userid').value = '';
+                    document.getElementById('ad-reg-keyword').value = '';
+                    document.getElementById('ad-reg-product-name').value = '';
+                    document.getElementById('ad-reg-product-mid').value = '';
+                    document.getElementById('ad-reg-price-mid').value = '';
+                    document.getElementById('ad-reg-price-comparison').value = 'false';
+                    document.getElementById('ad-reg-plus').value = 'false';
+                    document.getElementById('ad-reg-work-days').value = '';
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('ad-reg-start-date').value = today;
+                    document.getElementById('ad-reg-end-date').value = today;
+                    
+                    adRightSidebar.classList.remove('active');
+                    
+                    // 광고 목록 새로고침
+                    await loadAdList();
+                } else {
+                    // 더 자세한 에러 정보 출력
+                    let errorData = {};
+                    try {
+                        const errorText = await response.text();
+                        errorData = errorText ? JSON.parse(errorText) : {};
+                    } catch (e) {
+                        errorData = { message: `서버 오류 (${response.status})` };
+                    }
+                    
+                    console.error('등록 실패:', response.status, errorData);
+                    alert(`등록 실패: ${errorData.message || errorData.detail || '서버 오류가 발생했습니다.'}`);
+                }
+            } catch (error) {
+                console.error('API 호출 오류:', error);
+                alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
+            } finally {
+                adRegSubmitBtn.disabled = false;
+                adRegSubmitBtn.textContent = '등록';
+            }
+        });
+    }
 
     // 검색 기능
     if (searchBtn) {
@@ -290,9 +477,7 @@ const initAdEvents = () => {
             try {
                 const response = await fetch(`${API_BASE_URL}/advertisements/extend`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({
                         ad_ids: adIds
                     })
@@ -338,9 +523,7 @@ const initAdEvents = () => {
             try {
                 const response = await fetch(`${API_BASE_URL}/advertisements`, {
                     method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({
                         ad_ids: adIds
                     })

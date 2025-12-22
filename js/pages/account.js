@@ -204,6 +204,35 @@ const initAccountEvents = () => {
     const searchInput = document.querySelector('.search-input');
     const searchSelect = document.querySelector('.search-select');
 
+    // 현재 검색 조건 저장 (전역 변수)
+    let currentSearchParams = {};
+
+    // 검색 파라미터 생성 함수
+    const getSearchParams = () => {
+        const searchType = searchSelect ? searchSelect.value : 'all';
+        const searchKeyword = searchInput ? searchInput.value.trim() : '';
+        
+        const params = {};
+        if (searchKeyword) {
+            if (searchType === 'userid') {
+                // 아이디 검색은 username으로 전송
+                params.username = searchKeyword;
+            } else if (searchType === 'all') {
+                params.keyword = searchKeyword;
+            } else if (searchType === 'group') {
+                params.affiliation = searchKeyword;
+            } else if (searchType === 'memo') {
+                params.memo = searchKeyword;
+            }
+        }
+        return params;
+    };
+
+    // 저장된 검색 조건으로 목록 로드
+    const loadWithCurrentSearch = async () => {
+        await loadAccountList(currentSearchParams);
+    };
+
     // 전체 선택 체크박스
     if (selectAll) {
         selectAll.addEventListener('change', () => {
@@ -301,8 +330,16 @@ const initAccountEvents = () => {
                 if (response.ok) {
                     const data = await response.json();
                     alert('계정이 등록되었습니다.');
+                    
+                    // 폼 초기화
+                    document.getElementById('reg-userid').value = '';
+                    document.getElementById('reg-password').value = '';
+                    document.getElementById('reg-role').value = 'advertiser';
+                    document.getElementById('reg-memo').value = '';
+                    
                     rightSidebar.classList.remove('active');
-                    // 계정 목록 새로고침
+                    
+                    // 계정 목록 새로고침 (검색 조건 없이 전체 목록)
                     await loadAccountList();
                 } else {
                     // 더 자세한 에러 정보 출력
@@ -330,15 +367,9 @@ const initAccountEvents = () => {
     // 검색 기능
     if (searchBtn) {
         const performSearch = async () => {
-            const searchType = searchSelect ? searchSelect.value : 'all';
-            const searchKeyword = searchInput ? searchInput.value.trim() : '';
-            
-            const searchParams = {};
-            if (searchKeyword) {
-                searchParams[searchType === 'all' ? 'keyword' : searchType] = searchKeyword;
-            }
-            
-            await loadAccountList(searchParams);
+            // 현재 검색 조건 저장
+            currentSearchParams = getSearchParams();
+            await loadAccountList(currentSearchParams);
         };
         
         searchBtn.addEventListener('click', performSearch);
@@ -388,6 +419,7 @@ const initAccountEvents = () => {
                 
                 if (response.ok) {
                     alert('선택한 계정이 삭제되었습니다.');
+                    // 계정 목록 새로고침 (검색 조건 없이 전체 목록)
                     await loadAccountList();
                 } else {
                     // 더 자세한 에러 정보 출력

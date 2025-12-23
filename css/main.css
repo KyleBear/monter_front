@@ -46,7 +46,8 @@ body {
 }
 
 .nav-logo-text {
-    height: 35px;
+    /* height: 35px; */
+    height: 70px;
     width: auto;
     object-fit: contain;
 }

@@ -112,18 +112,18 @@ const loadAccountList = async (searchParams = {}) => {
             
             // 다양한 응답 형식 지원
             let accounts = [];
-            if (Array.isArray(data)) {
-                // 응답이 배열인 경우
-                accounts = data;
-                console.log('응답이 배열 형식입니다.');
+            if (data.data && data.data.accounts && Array.isArray(data.data.accounts)) {
+                // 응답이 { success: true, data: { accounts: [...] }, stats: {...} } 형식인 경우
+                accounts = data.data.accounts;
+                console.log('응답이 객체 형식입니다 (data.data.accounts 키 사용).');
             } else if (data.accounts && Array.isArray(data.accounts)) {
-                // 응답이 { accounts: [...] } 형식인 경우
+                // 응답이 { accounts: [...] } 형식인 경우 (다른 API와의 호환성)
                 accounts = data.accounts;
                 console.log('응답이 객체 형식입니다 (accounts 키 사용).');
-            } else if (data.data && Array.isArray(data.data)) {
-                // 응답이 { data: [...] } 형식인 경우
-                accounts = data.data;
-                console.log('응답이 객체 형식입니다 (data 키 사용).');
+            } else if (Array.isArray(data)) {
+                // 응답이 배열인 경우 (호환성을 위해 유지)
+                accounts = data;
+                console.log('응답이 배열 형식입니다.');
             } else {
                 console.warn('예상하지 못한 응답 형식:', data);
                 accounts = [];

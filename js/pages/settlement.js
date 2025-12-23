@@ -194,8 +194,8 @@ const updateSettlementStats = (stats) => {
 const loadSettlementList = async (params = {}) => {
     try {
         const queryString = new URLSearchParams(params).toString();
-        // FastAPI 일반 패턴: 언더스코어 사용 (settlement_logs)
-        const url = `${API_BASE_URL}/settlement_logs${queryString ? '?' + queryString : ''}`;
+        // 백엔드 엔드포인트: /settlements
+        const url = `${API_BASE_URL}/settlements${queryString ? '?' + queryString : ''}`;
         
         console.log('정산 로그 API 호출:', url); // 디버깅용
         

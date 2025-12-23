@@ -83,6 +83,41 @@
                 <button id="reg-close-btn" class="btn-close">닫기</button>
             </div>
         </div>
+
+        <!-- 우측 수정 사이드바 (추가) -->
+        <div id="edit-sidebar" class="right-sidebar">
+            <h3>계정 수정</h3>
+            <input type="hidden" id="edit-user-id">
+            <div class="form-group">
+                <label>아이디</label>
+                <input type="text" id="edit-userid" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+            </div>
+            <div class="form-group">
+                <label>비밀번호 (변경 시에만 입력)</label>
+                <input type="password" id="edit-password" placeholder="비밀번호를 변경하려면 입력하세요">
+                <small style="color: #666; font-size: 12px;">비워두면 비밀번호는 변경되지 않습니다.</small>
+            </div>
+            <div class="form-group">
+                <label>권한</label>
+                <select id="edit-role" class="search-select" style="width: 100%;">
+                    <option value="total">총판사</option>
+                    <option value="agency">대행사</option>
+                    <option value="advertiser">광고주</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>소속</label>
+                <input type="text" id="edit-affiliation" placeholder="소속을 입력하세요">
+            </div>
+            <div class="form-group">
+                <label>메모</label>
+                <textarea id="edit-memo" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; resize: none;"></textarea>
+            </div>
+            <div class="form-actions">
+                <button id="edit-submit-btn" class="btn-submit">수정</button>
+                <button id="edit-close-btn" class="btn-close">닫기</button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="js/main.js"></script>

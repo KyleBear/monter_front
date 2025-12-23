@@ -218,8 +218,17 @@ const renderAccountTable = (accounts) => {
             'advertiser': '광고주'
         };
         
+        // 계정 데이터를 JSON으로 저장 (수정 시 사용)
+        const accountDataJson = JSON.stringify({
+            user_id: account.user_id || account.id,
+            username: account.username || account.userid || '',
+            role: account.role || '',
+            affiliation: account.affiliation || '',
+            memo: account.memo || ''
+        });
+        
         return `
-            <tr data-account-id="${account.user_id || account.id}">
+            <tr data-account-id="${account.user_id || account.id}" data-account-data='${accountDataJson}'>
                 <td class="checkbox-col"><input type="checkbox" class="row-check"></td>
                 <td>${index + 1}</td>
                 <td>${account.username || account.userid || '-'}</td>
@@ -397,6 +406,13 @@ const initAccountEvents = () => {
             document.getElementById('reg-userid').value = '';
             document.getElementById('reg-password').value = '';
             document.getElementById('reg-memo').value = '';
+            
+            // 수정 사이드바가 열려있으면 닫기
+            const editSidebar = document.getElementById('edit-sidebar');
+            if (editSidebar && editSidebar.classList.contains('active')) {
+                editSidebar.classList.remove('active');
+            }
+            
             rightSidebar.classList.add('active');
         });
     }
@@ -409,9 +425,18 @@ const initAccountEvents = () => {
     }
 
     // 계정 등록 폼 제출
+    let isSubmittingAccount = false; // 처리 중 플래그
+    
     if (regSubmitBtn) {
         regSubmitBtn.addEventListener('click', async (e) => {
             e.preventDefault();
+            e.stopPropagation(); // 이벤트 버블링 방지
+            
+            // 이미 처리 중이면 무시
+            if (isSubmittingAccount) {
+                console.log('계정 등록이 이미 처리 중입니다.');
+                return;
+            }
             
             const userid = document.getElementById('reg-userid').value.trim();
             const password = document.getElementById('reg-password').value;
@@ -437,7 +462,8 @@ const initAccountEvents = () => {
                 return;
             }
             
-            // 등록 버튼 비활성화
+            // 처리 중 플래그 설정 및 버튼 비활성화
+            isSubmittingAccount = true;
             regSubmitBtn.disabled = true;
             regSubmitBtn.textContent = '등록 중...';
             
@@ -492,6 +518,8 @@ const initAccountEvents = () => {
                 console.error('API 호출 오류:', error);
                 alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
             } finally {
+                // 처리 중 플래그 해제 및 버튼 활성화
+                isSubmittingAccount = false;
                 regSubmitBtn.disabled = false;
                 regSubmitBtn.textContent = '등록';
             }
@@ -529,8 +557,10 @@ const initAccountEvents = () => {
             
             const accountIds = Array.from(rowChecksCurrent).map(check => {
                 const row = check.closest('tr');
-                return row ? row.getAttribute('data-account-id') : null;
-            }).filter(id => id !== null);
+                const id = row ? row.getAttribute('data-account-id') : null;
+                // 문자열을 정수로 변환
+                return id ? parseInt(id, 10) : null;
+            }).filter(id => id !== null && !isNaN(id));
             
             if (accountIds.length === 0) {
                 alert('삭제할 계정을 선택해주세요.');
@@ -542,7 +572,9 @@ const initAccountEvents = () => {
             }
             
             try {
-                // 여러 계정 삭제 (배열로 전송)
+                console.log('삭제 요청 account_ids:', accountIds);
+                
+                // 여러 계정 삭제 (정수 배열로 전송)
                 const response = await fetch(`${API_BASE_URL}/accounts`, {
                     method: 'DELETE',
                     headers: getAuthHeaders(),
@@ -551,26 +583,265 @@ const initAccountEvents = () => {
                     })
                 });
                 
+                console.log('삭제 응답 상태:', response.status);
+                
                 if (response.ok) {
+                    const data = await response.json();
+                    console.log('삭제 성공:', data);
                     alert('선택한 계정이 삭제되었습니다.');
                     // 계정 목록 새로고침 (검색 조건 없이 전체 목록)
                     await loadAccountList();
                 } else {
                     // 더 자세한 에러 정보 출력
                     let errorData = {};
+                    let errorText = '';
                     try {
-                        const errorText = await response.text();
-                        errorData = errorText ? JSON.parse(errorText) : {};
+                        errorText = await response.text();
+                        console.error('삭제 실패 - 응답 텍스트:', errorText);
+                        if (errorText) {
+                            try {
+                                errorData = JSON.parse(errorText);
+                            } catch (parseError) {
+                                errorData = { message: errorText };
+                            }
+                        }
                     } catch (e) {
                         errorData = { message: `서버 오류 (${response.status})` };
                     }
                     
-                    console.error('삭제 실패:', response.status, errorData);
-                    alert(`삭제 실패: ${errorData.message || errorData.detail || '서버 오류가 발생했습니다.'}`);
+                    console.error('삭제 실패 상세:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorData: errorData
+                    });
+                    
+                    // 에러 메시지 추출
+                    let errorMessage = '서버 오류가 발생했습니다.';
+                    if (errorData.detail) {
+                        if (Array.isArray(errorData.detail)) {
+                            errorMessage = errorData.detail.map(err => {
+                                if (typeof err === 'object' && err.loc && err.msg) {
+                                    return `- ${err.loc.join('.')}: ${err.msg}`;
+                                }
+                                return `- ${JSON.stringify(err)}`;
+                            }).join('\n');
+                        } else if (typeof errorData.detail === 'string') {
+                            errorMessage = errorData.detail;
+                        } else {
+                            errorMessage = JSON.stringify(errorData.detail, null, 2);
+                        }
+                    } else if (errorData.message) {
+                        errorMessage = errorData.message;
+                    }
+                    
+                    alert(`삭제 실패: ${errorMessage}`);
                 }
             } catch (error) {
                 console.error('삭제 API 호출 오류:', error);
-                alert('서버 연결에 실패했습니다.');
+                alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
+            }
+        });
+    }
+
+    // 개별 수정 버튼 이벤트 (이벤트 위임 사용)
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('btn-edit')) {
+            const accountId = e.target.getAttribute('data-account-id');
+            if (!accountId) return;
+            
+            // 테이블 행에서 계정 데이터 가져오기
+            const row = e.target.closest('tr');
+            if (!row) return;
+            
+            const accountDataStr = row.getAttribute('data-account-data');
+            if (!accountDataStr) {
+                alert('계정 정보를 불러올 수 없습니다.');
+                return;
+            }
+            
+            let accountData;
+            try {
+                accountData = JSON.parse(accountDataStr);
+            } catch (error) {
+                console.error('계정 데이터 파싱 오류:', error);
+                alert('계정 정보를 불러올 수 없습니다.');
+                return;
+            }
+            
+            // 수정 사이드바 열기 및 기존 정보 로드
+            const editSidebar = document.getElementById('edit-sidebar');
+            if (!editSidebar) {
+                alert('수정 사이드바를 찾을 수 없습니다.');
+                return;
+            }
+            
+            // 기존 계정 정보를 폼에 채우기
+            document.getElementById('edit-user-id').value = accountData.user_id;
+            document.getElementById('edit-userid').value = accountData.username || '';
+            document.getElementById('edit-password').value = ''; // 비밀번호는 비워둠
+            document.getElementById('edit-role').value = accountData.role || '';
+            document.getElementById('edit-affiliation').value = accountData.affiliation || '';
+            document.getElementById('edit-memo').value = accountData.memo || '';
+            
+            // 등록 사이드바가 열려있으면 닫기
+            const rightSidebar = document.getElementById('right-sidebar');
+            if (rightSidebar && rightSidebar.classList.contains('active')) {
+                rightSidebar.classList.remove('active');
+            }
+            
+            // 수정 사이드바 열기
+            editSidebar.classList.add('active');
+        }
+    });
+    
+    // 수정 사이드바 닫기
+    const editCloseBtn = document.getElementById('edit-close-btn');
+    if (editCloseBtn) {
+        editCloseBtn.addEventListener('click', () => {
+            const editSidebar = document.getElementById('edit-sidebar');
+            if (editSidebar) {
+                editSidebar.classList.remove('active');
+            }
+        });
+    }
+    
+    // 계정 수정 폼 제출
+    let isSubmittingEdit = false; // 처리 중 플래그
+    const editSubmitBtn = document.getElementById('edit-submit-btn');
+    
+    if (editSubmitBtn) {
+        editSubmitBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // 이벤트 버블링 방지
+            
+            // 이미 처리 중이면 무시
+            if (isSubmittingEdit) {
+                console.log('계정 수정이 이미 처리 중입니다.');
+                return;
+            }
+            
+            const userId = document.getElementById('edit-user-id').value;
+            const password = document.getElementById('edit-password').value;
+            const role = document.getElementById('edit-role').value;
+            const affiliation = document.getElementById('edit-affiliation').value.trim();
+            const memo = document.getElementById('edit-memo').value.trim();
+            
+            // 유효성 검사
+            if (!userId) {
+                alert('계정 ID를 찾을 수 없습니다.');
+                return;
+            }
+            if (password && password.length < 4) {
+                alert('비밀번호는 4자 이상 입력해주세요.');
+                return;
+            }
+            if (!affiliation) {
+                alert('소속을 입력해주세요.');
+                return;
+            }
+            
+            // 처리 중 플래그 설정 및 버튼 비활성화
+            isSubmittingEdit = true;
+            editSubmitBtn.disabled = true;
+            editSubmitBtn.textContent = '수정 중...';
+            
+            try {
+                // 수정 요청 본문 구성 (비밀번호는 입력된 경우에만 포함)
+                const requestBody = {
+                    role: role,
+                    affiliation: affiliation,
+                    memo: memo || null
+                };
+                
+                // 비밀번호가 입력된 경우에만 추가
+                if (password && password.trim() !== '') {
+                    requestBody.password = password;
+                }
+                
+                console.log('계정 수정 요청:', `PUT ${API_BASE_URL}/accounts/${userId}`, requestBody);
+                
+                const response = await fetch(`${API_BASE_URL}/accounts/${userId}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(requestBody)
+                });
+                
+                console.log('계정 수정 응답 상태:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('계정 수정 성공:', data);
+                    alert('계정이 수정되었습니다.');
+                    
+                    // 폼 초기화
+                    document.getElementById('edit-user-id').value = '';
+                    document.getElementById('edit-userid').value = '';
+                    document.getElementById('edit-password').value = '';
+                    document.getElementById('edit-role').value = '';
+                    document.getElementById('edit-affiliation').value = '';
+                    document.getElementById('edit-memo').value = '';
+                    
+                    // 수정 사이드바 닫기
+                    const editSidebar = document.getElementById('edit-sidebar');
+                    if (editSidebar) {
+                        editSidebar.classList.remove('active');
+                    }
+                    
+                    // 계정 목록 새로고침 (검색 조건 없이 전체 목록)
+                    await loadAccountList();
+                } else {
+                    // 더 자세한 에러 정보 출력
+                    let errorData = {};
+                    let errorText = '';
+                    try {
+                        errorText = await response.text();
+                        console.error('수정 실패 - 응답 텍스트:', errorText);
+                        if (errorText) {
+                            try {
+                                errorData = JSON.parse(errorText);
+                            } catch (parseError) {
+                                errorData = { message: errorText };
+                            }
+                        }
+                    } catch (e) {
+                        errorData = { message: `서버 오류 (${response.status})` };
+                    }
+                    
+                    console.error('수정 실패 상세:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorData: errorData
+                    });
+                    
+                    // 에러 메시지 추출
+                    let errorMessage = '서버 오류가 발생했습니다.';
+                    if (errorData.detail) {
+                        if (Array.isArray(errorData.detail)) {
+                            errorMessage = errorData.detail.map(err => {
+                                if (typeof err === 'object' && err.loc && err.msg) {
+                                    return `- ${err.loc.join('.')}: ${err.msg}`;
+                                }
+                                return `- ${JSON.stringify(err)}`;
+                            }).join('\n');
+                        } else if (typeof errorData.detail === 'string') {
+                            errorMessage = errorData.detail;
+                        } else {
+                            errorMessage = JSON.stringify(errorData.detail, null, 2);
+                        }
+                    } else if (errorData.message) {
+                        errorMessage = errorData.message;
+                    }
+                    
+                    alert(`수정 실패: ${errorMessage}`);
+                }
+            } catch (error) {
+                console.error('API 호출 오류:', error);
+                alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
+            } finally {
+                // 처리 중 플래그 해제 및 버튼 활성화
+                isSubmittingEdit = false;
+                editSubmitBtn.disabled = false;
+                editSubmitBtn.textContent = '수정';
             }
         });
     }

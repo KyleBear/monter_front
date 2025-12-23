@@ -349,9 +349,18 @@ const initAdEvents = () => {
     }
 
     // 광고 등록 폼 제출
+    let isSubmittingAd = false; // 처리 중 플래그
+    
     if (adRegSubmitBtn) {
         adRegSubmitBtn.addEventListener('click', async (e) => {
             e.preventDefault();
+            e.stopPropagation(); // 이벤트 버블링 방지
+            
+            // 이미 처리 중이면 무시
+            if (isSubmittingAd) {
+                console.log('광고 등록이 이미 처리 중입니다.');
+                return;
+            }
             
             const userid = document.getElementById('ad-reg-userid').value.trim();
             const keyword = document.getElementById('ad-reg-keyword').value.trim();
@@ -393,7 +402,8 @@ const initAdEvents = () => {
                 return;
             }
             
-            // 등록 버튼 비활성화
+            // 처리 중 플래그 설정 및 버튼 비활성화
+            isSubmittingAd = true;
             adRegSubmitBtn.disabled = true;
             adRegSubmitBtn.textContent = '등록 중...';
             
@@ -500,6 +510,8 @@ const initAdEvents = () => {
                 console.error('API 호출 오류:', error);
                 alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
             } finally {
+                // 처리 중 플래그 해제 및 버튼 활성화
+                isSubmittingAd = false;
                 adRegSubmitBtn.disabled = false;
                 adRegSubmitBtn.textContent = '등록';
             }

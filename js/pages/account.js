@@ -244,6 +244,32 @@ const renderAccountTable = (accounts) => {
     console.log('✅ 계정 테이블 렌더링 완료');
 };
 
+// 체크박스 선택 개수 업데이트 함수 (전역)
+const updateSelectCount = () => {
+    const selectCountSpan = document.getElementById('select-count');
+    const rowChecksCurrent = document.querySelectorAll('.row-check');
+    const checkedCount = Array.from(rowChecksCurrent).filter(c => c.checked).length;
+    if (selectCountSpan) selectCountSpan.textContent = checkedCount;
+};
+
+// 체크박스 변경 핸들러 (전역)
+const handleRowCheckChange = () => {
+    updateSelectCount();
+    const selectAll = document.getElementById('select-all');
+    const rowChecksCurrent = document.querySelectorAll('.row-check');
+    const allChecked = Array.from(rowChecksCurrent).every(c => c.checked);
+    if (selectAll) selectAll.checked = allChecked && rowChecksCurrent.length > 0;
+};
+
+// 체크박스 이벤트 바인딩 함수 (전역)
+const bindRowChecks = () => {
+    const rowChecksCurrent = document.querySelectorAll('.row-check');
+    rowChecksCurrent.forEach(check => {
+        check.removeEventListener('change', handleRowCheckChange);
+        check.addEventListener('change', handleRowCheckChange);
+    });
+};
+
 const initAccountEvents = () => {
     const selectAll = document.getElementById('select-all');
     const rowChecks = document.querySelectorAll('.row-check');
@@ -297,28 +323,7 @@ const initAccountEvents = () => {
         });
     }
 
-    // 개별 선택 체크박스
-    const bindRowChecks = () => {
-        const rowChecksCurrent = document.querySelectorAll('.row-check');
-        rowChecksCurrent.forEach(check => {
-            check.removeEventListener('change', handleRowCheckChange);
-            check.addEventListener('change', handleRowCheckChange);
-        });
-    };
-
-    const handleRowCheckChange = () => {
-        updateSelectCount();
-        const rowChecksCurrent = document.querySelectorAll('.row-check');
-        const allChecked = Array.from(rowChecksCurrent).every(c => c.checked);
-        if (selectAll) selectAll.checked = allChecked && rowChecksCurrent.length > 0;
-    };
-
-    const updateSelectCount = () => {
-        const rowChecksCurrent = document.querySelectorAll('.row-check');
-        const checkedCount = Array.from(rowChecksCurrent).filter(c => c.checked).length;
-        if (selectCountSpan) selectCountSpan.textContent = checkedCount;
-    };
-
+    // 개별 선택 체크박스 이벤트 바인딩 (전역 함수 사용)
     bindRowChecks();
 
     // 등록 사이드바 열기

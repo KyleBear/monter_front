@@ -103,10 +103,36 @@ const loadAccountList = async (searchParams = {}) => {
 
         if (response.ok) {
             const data = await response.json();
-            console.log('계정 목록 API 응답:', data);
-            console.log('계정 개수:', data.accounts?.length || 0);
+            console.log('계정 목록 API 응답 (전체):', JSON.stringify(data, null, 2));
+            console.log('계정 목록 API 응답 (객체):', data);
+            console.log('응답 데이터 키:', Object.keys(data));
+            console.log('data.accounts:', data.accounts);
+            console.log('data.accounts 타입:', typeof data.accounts);
+            console.log('data.accounts 길이:', data.accounts?.length);
             
-            renderAccountTable(data.accounts || []);
+            // 다양한 응답 형식 지원
+            let accounts = [];
+            if (Array.isArray(data)) {
+                // 응답이 배열인 경우
+                accounts = data;
+                console.log('응답이 배열 형식입니다.');
+            } else if (data.accounts && Array.isArray(data.accounts)) {
+                // 응답이 { accounts: [...] } 형식인 경우
+                accounts = data.accounts;
+                console.log('응답이 객체 형식입니다 (accounts 키 사용).');
+            } else if (data.data && Array.isArray(data.data)) {
+                // 응답이 { data: [...] } 형식인 경우
+                accounts = data.data;
+                console.log('응답이 객체 형식입니다 (data 키 사용).');
+            } else {
+                console.warn('예상하지 못한 응답 형식:', data);
+                accounts = [];
+            }
+            
+            console.log('최종 계정 배열:', accounts);
+            console.log('최종 계정 개수:', accounts.length);
+            
+            renderAccountTable(accounts);
             updateAccountStatus(data.stats || {});
         } else {
             // 더 자세한 에러 정보 출력
@@ -151,21 +177,39 @@ const updateAccountStatus = (stats) => {
 // 계정 테이블 렌더링
 const renderAccountTable = (accounts) => {
     const tbody = document.getElementById('account-list');
-    console.log('renderAccountTable 호출, accounts:', accounts);
+    console.log('=== renderAccountTable 호출 ===');
+    console.log('accounts 파라미터:', accounts);
+    console.log('accounts 타입:', typeof accounts);
+    console.log('accounts가 배열인가?', Array.isArray(accounts));
+    console.log('accounts 길이:', accounts?.length);
     console.log('tbody 요소:', tbody);
     
     if (!tbody) {
-        console.error('account-list tbody를 찾을 수 없습니다.');
+        console.error('❌ account-list tbody를 찾을 수 없습니다.');
+        console.error('현재 DOM에 account-list ID를 가진 요소가 있는지 확인하세요.');
         return;
     }
 
-    if (!accounts || accounts.length === 0) {
-        console.log('계정 데이터가 없습니다.');
+    if (!accounts) {
+        console.warn('⚠️ accounts가 null 또는 undefined입니다.');
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">계정 데이터를 불러올 수 없습니다.</td></tr>';
+        return;
+    }
+    
+    if (!Array.isArray(accounts)) {
+        console.error('❌ accounts가 배열이 아닙니다. 타입:', typeof accounts);
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">계정 데이터 형식이 올바르지 않습니다.</td></tr>';
+        return;
+    }
+
+    if (accounts.length === 0) {
+        console.log('ℹ️ 계정 데이터가 없습니다 (빈 배열).');
         tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">등록된 계정이 없습니다.</td></tr>';
         return;
     }
     
-    console.log('계정 테이블 렌더링 시작, 계정 수:', accounts.length);
+    console.log('✅ 계정 테이블 렌더링 시작, 계정 수:', accounts.length);
+    console.log('첫 번째 계정 데이터 예시:', accounts[0]);
 
     tbody.innerHTML = accounts.map((account, index) => {
         const roleMap = {
@@ -190,8 +234,14 @@ const renderAccountTable = (accounts) => {
         `;
     }).join('');
 
+    console.log('✅ 테이블 HTML 생성 완료');
+    console.log('생성된 HTML 길이:', tbody.innerHTML.length);
+    console.log('tbody.innerHTML (처음 500자):', tbody.innerHTML.substring(0, 500));
+
     // 체크박스 이벤트 다시 바인딩
     bindRowChecks();
+    
+    console.log('✅ 계정 테이블 렌더링 완료');
 };
 
 const initAccountEvents = () => {

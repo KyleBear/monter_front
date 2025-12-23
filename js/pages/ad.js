@@ -358,9 +358,20 @@ const initAdEvents = () => {
             const productName = document.getElementById('ad-reg-product-name').value.trim();
             const productMid = document.getElementById('ad-reg-product-mid').value.trim();
             const priceMid = document.getElementById('ad-reg-price-mid').value.trim();
-            const priceComparison = document.getElementById('ad-reg-price-comparison').value === 'true';
-            const plus = document.getElementById('ad-reg-plus').value === 'true';
-            const workDays = parseInt(document.getElementById('ad-reg-work-days').value) || 0;
+            const priceComparisonValue = document.getElementById('ad-reg-price-comparison').value;
+            const plusValue = document.getElementById('ad-reg-plus').value;
+            const workDaysValue = document.getElementById('ad-reg-work-days').value;
+            
+            // boolean 변환 (문자열 'true'/'false' 또는 boolean)
+            const priceComparison = priceComparisonValue === 'true' || priceComparisonValue === true;
+            const plus = plusValue === 'true' || plusValue === true;
+            
+            // 숫자 변환 (빈 문자열이면 null 또는 0)
+            const workDays = workDaysValue ? parseInt(workDaysValue) : 0;
+            if (isNaN(workDays)) {
+                alert('작업일수는 숫자로 입력해주세요.');
+                return;
+            }
             const startDate = document.getElementById('ad-reg-start-date').value;
             const endDate = document.getElementById('ad-reg-end-date').value;
             
@@ -387,22 +398,28 @@ const initAdEvents = () => {
             adRegSubmitBtn.textContent = '등록 중...';
             
             try {
+                const requestBody = {
+                    username: userid,
+                    main_keyword: keyword,
+                    product_name: productName || null,
+                    product_mid: productMid || null,
+                    price_comparison_mid: priceMid || null,
+                    price_comparison: priceComparison,
+                    plus: plus,
+                    work_days: workDays,
+                    start_date: startDate,
+                    end_date: endDate
+                };
+                
+                console.log('광고 등록 요청 데이터:', requestBody);
+                
                 const response = await fetch(`${API_BASE_URL}/advertisements`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
-                    body: JSON.stringify({
-                        username: userid,
-                        main_keyword: keyword,
-                        product_name: productName || null,
-                        product_mid: productMid || null,
-                        price_comparison_mid: priceMid || null,
-                        price_comparison: priceComparison,
-                        plus: plus,
-                        work_days: workDays,
-                        start_date: startDate,
-                        end_date: endDate
-                    })
+                    body: JSON.stringify(requestBody)
                 });
+                
+                console.log('광고 등록 응답 상태:', response.status);
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -428,15 +445,56 @@ const initAdEvents = () => {
                 } else {
                     // 더 자세한 에러 정보 출력
                     let errorData = {};
+                    let errorText = '';
                     try {
-                        const errorText = await response.text();
-                        errorData = errorText ? JSON.parse(errorText) : {};
+                        errorText = await response.text();
+                        console.error('광고 등록 실패 - 응답 텍스트:', errorText);
+                        if (errorText) {
+                            try {
+                                errorData = JSON.parse(errorText);
+                            } catch (parseError) {
+                                errorData = { message: errorText || `서버 오류 (${response.status})` };
+                            }
+                        } else {
+                            errorData = { message: `서버 오류 (${response.status})` };
+                        }
                     } catch (e) {
+                        console.error('에러 파싱 실패:', e);
                         errorData = { message: `서버 오류 (${response.status})` };
                     }
                     
-                    console.error('등록 실패:', response.status, errorData);
-                    alert(`등록 실패: ${errorData.message || errorData.detail || '서버 오류가 발생했습니다.'}`);
+                    console.error('등록 실패 상세:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorData: errorData,
+                        errorText: errorText
+                    });
+                    
+                    // 422 에러인 경우 더 자세한 정보 표시
+                    if (response.status === 422) {
+                        let errorMessage = '입력 데이터가 올바르지 않습니다.\n\n';
+                        if (errorData.detail) {
+                            if (Array.isArray(errorData.detail)) {
+                                errorMessage += errorData.detail.map(err => {
+                                    if (typeof err === 'object' && err.loc && err.msg) {
+                                        return `- ${err.loc.join('.')}: ${err.msg}`;
+                                    }
+                                    return `- ${JSON.stringify(err)}`;
+                                }).join('\n');
+                            } else if (typeof errorData.detail === 'string') {
+                                errorMessage += errorData.detail;
+                            } else {
+                                errorMessage += JSON.stringify(errorData.detail, null, 2);
+                            }
+                        } else if (errorData.message) {
+                            errorMessage += errorData.message;
+                        } else {
+                            errorMessage += JSON.stringify(errorData, null, 2);
+                        }
+                        alert(errorMessage);
+                    } else {
+                        alert(`등록 실패: ${errorData.message || errorData.detail || '서버 오류가 발생했습니다.'}`);
+                    }
                 }
             } catch (error) {
                 console.error('API 호출 오류:', error);

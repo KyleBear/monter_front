@@ -28,10 +28,24 @@ body {
 }
 
 .logo-area {
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 기존 텍스트 로고 (주석 해제 시 사용) */
+.logo-area .logo-text {
     font-size: 2rem;
     font-weight: bold;
-    margin-bottom: 30px;
     color: #333;
+}
+
+/* 이미지 로고 */
+.login-logo-text {
+    max-width: 200px;
+    height: auto;
+    object-fit: contain;
 }
 
 form input {

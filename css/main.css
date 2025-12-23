@@ -24,9 +24,38 @@ body {
     z-index: 100;
 }
 
-.nav-left { display: flex; align-items: center; gap: 15px; }
-.nav-logo { font-weight: bold; font-size: 20px; color: #333; }
-.hamburger { cursor: pointer; font-size: 24px; padding: 5px; }
+.nav-left { 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+}
+
+/* 기존 텍스트 로고 (주석 해제 시 사용) */
+.nav-logo { 
+    font-weight: bold; 
+    font-size: 20px; 
+    color: #333; 
+    display: none; /* 이미지 로고 사용 시 숨김 */
+}
+
+/* 이미지 로고 */
+.nav-logo-img {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+}
+
+.nav-logo-text {
+    height: 35px;
+    width: auto;
+    object-fit: contain;
+}
+
+.hamburger { 
+    cursor: pointer; 
+    font-size: 24px; 
+    padding: 5px; 
+}
 
 .nav-right { position: relative; }
 .user-profile { 

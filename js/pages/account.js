@@ -722,7 +722,7 @@ const initAccountEvents = () => {
             
             const userId = document.getElementById('edit-user-id').value;
             const password = document.getElementById('edit-password').value;
-            const role = document.getElementById('edit-role').value;
+            // 권한은 수정 불가 (disabled 필드이므로 요청에 포함하지 않음)
             const affiliation = document.getElementById('edit-affiliation').value.trim();
             const memo = document.getElementById('edit-memo').value.trim();
             
@@ -746,9 +746,8 @@ const initAccountEvents = () => {
             editSubmitBtn.textContent = '수정 중...';
             
             try {
-                // 수정 요청 본문 구성 (비밀번호는 입력된 경우에만 포함)
+                // 수정 요청 본문 구성 (비밀번호는 입력된 경우에만 포함, 권한은 제외)
                 const requestBody = {
-                    role: role,
                     affiliation: affiliation,
                     memo: memo || null
                 };

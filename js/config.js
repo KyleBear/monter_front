@@ -9,7 +9,7 @@ const getApiBaseUrl = () => {
         hostname.startsWith('192.168.') ||
         hostname.startsWith('10.') ||
         hostname.startsWith('172.')) {
-        return 'http://localhost:8000';  // 개발: 백엔드 직접 접근 (/api 없이)
+        return 'http://localhost:8001';  // 개발: 백엔드 직접 접근 (/api 없이)
     }
     
     // 프로덕션 환경: re-switch.co.kr 등

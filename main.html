@@ -21,7 +21,7 @@
                 <div class="dropdown" id="user-dropdown">
                     <div class="dropdown-item user-info">
                         <strong id="info-name">관리자</strong>
-                        <span class="role">마스터 권한</span>
+                        <span class="role" id="info-role">마스터 권한</span>
                     </div>
                     <hr>
                     <div class="dropdown-item">프로필 수정</div>
@@ -99,11 +99,12 @@
             </div>
             <div class="form-group">
                 <label>권한</label>
-                <select id="edit-role" class="search-select" style="width: 100%;">
+                <select id="edit-role" class="search-select" style="width: 100%;" disabled>
                     <option value="total">총판사</option>
                     <option value="agency">대행사</option>
                     <option value="advertiser">광고주</option>
                 </select>
+                <small style="color: #666; font-size: 12px;">권한은 수정할 수 없습니다.</small>
             </div>
             <div class="form-group">
                 <label>소속</label>

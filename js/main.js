@@ -15,8 +15,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. 유저 정보 표시
     const userName = sessionStorage.getItem('userName');
+    const userRole = sessionStorage.getItem('userRole');
+    
     document.getElementById('display-user-name').textContent = userName;
     document.getElementById('info-name').textContent = userName;
+    
+    // role에 따라 권한 텍스트 설정
+    const roleMap = {
+        'admin': '마스터 권한',
+        'total': '총판사 권한',
+        'agency': '대행사 권한',
+        'advertiser': '광고주 권한'
+    };
+    
+    const roleText = roleMap[userRole] || '권한 없음';
+    const roleElement = document.getElementById('info-role');
+    if (roleElement) {
+        roleElement.textContent = roleText;
+    }
 
     // 3. 네비게이션 드롭다운
     const profileBtn = document.getElementById('profile-btn');

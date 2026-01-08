@@ -102,9 +102,12 @@ const loadAdList = async (searchParams = {}) => {
         if (response.ok) {
             const data = await response.json();
             console.log('광고 목록 API 응답:', data);
-            console.log('광고 개수:', data.advertisements?.length || 0);
+            console.log('광고 개수:', data.data?.advertisements?.length || 0);
             
-            renderAdTable(data.advertisements || []);
+            // 응답 형식: { success: true, data: { advertisements: [...] }, stats: {...} }
+            const advertisements = data.data?.advertisements || [];
+            
+            renderAdTable(advertisements);
             updateAdStatus(data.stats || {});
         } else {
             let errorData = {};
@@ -212,10 +215,11 @@ export const initAdPage = (container) => {
         <!-- 우측 등록 사이드바 -->
         <div id="ad-right-sidebar" class="right-sidebar">
             <h3>광고 등록</h3>
-            <div class="form-group">
+            <!-- 아이디 입력 필드 주석처리: 현재 로그인한 사용자의 아이디가 자동으로 등록됨 -->
+            <!-- <div class="form-group">
                 <label>아이디</label>
                 <input type="text" id="ad-reg-userid" placeholder="아이디를 입력하세요">
-            </div>
+            </div> -->
             <div class="form-group">
                 <label>메인키워드</label>
                 <input type="text" id="ad-reg-keyword" placeholder="메인키워드를 입력하세요">
@@ -323,7 +327,7 @@ const initAdEvents = () => {
     if (openRegBtn) {
         openRegBtn.addEventListener('click', () => {
             // 폼 초기화
-            document.getElementById('ad-reg-userid').value = '';
+            // document.getElementById('ad-reg-userid').value = '';  // 아이디 필드 주석처리
             document.getElementById('ad-reg-keyword').value = '';
             document.getElementById('ad-reg-product-name').value = '';
             document.getElementById('ad-reg-product-mid').value = '';
@@ -362,7 +366,7 @@ const initAdEvents = () => {
                 return;
             }
             
-            const userid = document.getElementById('ad-reg-userid').value.trim();
+            // const userid = document.getElementById('ad-reg-userid').value.trim();  // 아이디 필드 주석처리: 세션 스토리지에서 가져옴
             const keyword = document.getElementById('ad-reg-keyword').value.trim();
             const productName = document.getElementById('ad-reg-product-name').value.trim();
             const productMid = document.getElementById('ad-reg-product-mid').value.trim();
@@ -385,10 +389,11 @@ const initAdEvents = () => {
             const endDate = document.getElementById('ad-reg-end-date').value;
             
             // 유효성 검사
-            if (!userid) {
-                alert('아이디를 입력해주세요.');
-                return;
-            }
+            // 아이디 유효성 검사 주석처리: 세션 스토리지에서 자동으로 가져옴
+            // if (!userid) {
+            //     alert('아이디를 입력해주세요.');
+            //     return;
+            // }
             if (!keyword) {
                 alert('메인키워드를 입력해주세요.');
                 return;
@@ -408,8 +413,21 @@ const initAdEvents = () => {
             adRegSubmitBtn.textContent = '등록 중...';
             
             try {
+                // 세션 스토리지에서 현재 로그인한 사용자 정보 가져오기
+                const currentUsername = sessionStorage.getItem('userName');  // 현재 로그인한 사용자의 아이디
+                const currentUserId = sessionStorage.getItem('userId');      // user_id는 인덱스 같은 것 (숫자 ID)
+                
+                if (!currentUsername) {
+                    alert('로그인 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+                    isSubmittingAd = false;
+                    adRegSubmitBtn.disabled = false;
+                    adRegSubmitBtn.textContent = '등록';
+                    return;
+                }
+                
                 const requestBody = {
-                    username: userid,
+                    user_id: currentUserId ? parseInt(currentUserId, 10) : null,  // user_id는 인덱스 같은 것
+                    username: currentUsername,  // 세션 스토리지에서 가져온 현재 로그인한 사용자의 아이디
                     main_keyword: keyword,
                     product_name: productName || null,
                     product_mid: productMid || null,
@@ -436,7 +454,7 @@ const initAdEvents = () => {
                     alert('광고가 등록되었습니다.');
                     
                     // 폼 초기화
-                    document.getElementById('ad-reg-userid').value = '';
+                    // document.getElementById('ad-reg-userid').value = '';  // 아이디 필드 주석처리
                     document.getElementById('ad-reg-keyword').value = '';
                     document.getElementById('ad-reg-product-name').value = '';
                     document.getElementById('ad-reg-product-mid').value = '';

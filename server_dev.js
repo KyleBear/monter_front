@@ -21,7 +21,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`Monter Frontend Server (Dev Mode)`);
     console.log(`=================================`);
     console.log(`Local: http://localhost:${PORT}`);
-    console.log(`Backend: http://localhost:8000`);
+    console.log(`Backend: http://localhost:8001`);
     console.log(`Note: Frontend directly calls backend (CORS required)`);
     console.log(`=================================`);
 });

@@ -207,9 +207,12 @@ const loadSettlementList = async (params = {}) => {
         if (response.ok) {
             const data = await response.json();
             console.log('정산 로그 API 응답:', data);
-            console.log('정산 로그 개수:', data.settlements?.length || 0);
+            console.log('정산 로그 개수:', data.data?.settlements?.length || 0);
             
-            renderSettlementTable(data.settlements || []);
+            // 응답 형식: { success: true, data: { settlements: [...] }, stats: {...} }
+            const settlements = data.data?.settlements || [];
+            
+            renderSettlementTable(settlements);
             updateSettlementStats(data.stats || {});
             return data;
         } else {

@@ -91,6 +91,7 @@ export const initSettlementPage = (container) => {
                     <tr>
                         <th>No</th>
                         <th>구분</th>
+                        <th>광고</th>
                         <th>대행사</th>
                         <th>광고주</th>
                         <th>수량</th>
@@ -98,6 +99,7 @@ export const initSettlementPage = (container) => {
                         <th>일수합계</th>
                         <th>생성일시</th>
                         <th>시작일</th>
+                        <th>역할</th>
                         <th>관리</th>
                     </tr>
                 </thead>
@@ -146,7 +148,7 @@ const renderSettlementTable = (settlements) => {
 
     if (!settlements || settlements.length === 0) {
         console.log('정산 로그 데이터가 없습니다.');
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">조회된 정산 로그가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; padding: 20px;">조회된 정산 로그가 없습니다.</td></tr>';
         return;
     }
     
@@ -155,7 +157,15 @@ const renderSettlementTable = (settlements) => {
     const typeMap = {
         'order': '발주',
         'extend': '연장',
-        'refund': '환불'
+        'refund': '환불',
+        'update': '수정'
+    };
+
+    const roleMap = {
+        'agency': '대행사',
+        'advertiser': '광고주',
+        'admin': '관리자',
+        'total': '총판사'
     };
 
     tbody.innerHTML = settlements.map((settlement, index) => {
@@ -163,10 +173,23 @@ const renderSettlementTable = (settlements) => {
             ? `${settlement.period_start} ~ ${settlement.period_end}`
             : '-';
         
+        // 광고 정보 표시 (상품명 또는 메인 키워드)
+        const adInfo = settlement.product_name 
+            ? `${settlement.product_name}${settlement.main_keyword ? ` (${settlement.main_keyword})` : ''}`
+            : settlement.main_keyword 
+            ? settlement.main_keyword
+            : settlement.ad_id || settlement.advertisement_id
+            ? `광고 ID: ${settlement.ad_id || settlement.advertisement_id}`
+            : '-';
+        
+        // 역할 한글 변환
+        const roleText = roleMap[settlement.performed_by_role] || settlement.performed_by_role || '-';
+        
         return `
             <tr data-settlement-id="${settlement.settlement_id || settlement.id}">
                 <td>${index + 1}</td>
                 <td>${typeMap[settlement.settlement_type] || settlement.settlement_type || '-'}</td>
+                <td>${adInfo}</td>
                 <td>${settlement.agency_name || settlement.agency || '-'}</td>
                 <td>${settlement.advertiser_name || settlement.advertiser || '-'}</td>
                 <td>${settlement.quantity || 0}</td>
@@ -174,6 +197,7 @@ const renderSettlementTable = (settlements) => {
                 <td>${settlement.total_days || 0}</td>
                 <td>${settlement.created_at || '-'}</td>
                 <td>${settlement.start_date || '-'}</td>
+                <td>${roleText}</td>
                 <td><!-- <button class="btn-edit-row" data-settlement-id="${settlement.settlement_id || settlement.id}">수정</button> --></td>
             </tr>
         `;

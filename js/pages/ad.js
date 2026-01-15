@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config.js';
+import { API_BASE_URL } from '../config.js'
 
 // 공통 헤더 생성 함수
 const getAuthHeaders = () => {
@@ -45,7 +45,7 @@ const renderAdTable = (ads) => {
 
     if (!ads || ads.length === 0) {
         console.log('광고 데이터가 없습니다.');
-        tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px;">등록된 광고가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; padding: 20px;">등록된 광고가 없습니다.</td></tr>';
         return;
     }
     
@@ -66,11 +66,10 @@ const renderAdTable = (ads) => {
             <tr data-ad-id="${ad.ad_id || ad.id}">
                 <td class="checkbox-col"><input type="checkbox" class="row-check"></td>
                 <td>${index + 1}</td>
+                <td>${ad.rank || ad.ranking || '-'}</td>
                 <td>${ad.username || ad.userid || '-'}</td>
                 <td><span style="color: ${status.color};">${status.text}</span></td>
                 <td>${ad.main_keyword || '-'}</td>
-                <td>${ad.price_comparison ? 'Y' : 'N'}</td>
-                <td>${ad.plus ? 'Y' : 'N'}</td>
                 <td>${ad.product_name || '-'}</td>
                 <td>${ad.product_mid || '-'}</td>
                 <td>${ad.price_comparison_mid || '-'}</td>
@@ -183,6 +182,7 @@ export const initAdPage = (container) => {
                 <button class="btn-delete">삭제</button>
                 <button class="btn-extend" id="extend-btn">연장</button>
                 <button class="btn-register" id="open-register-btn">등록</button>
+                <button class="btn-register" id="csv-upload-btn" style="background-color: #28a745;">CSV 업로드</button>
             </div>
         </div>
 
@@ -192,11 +192,10 @@ export const initAdPage = (container) => {
                     <tr>
                         <th class="checkbox-col"><input type="checkbox" id="select-all"></th>
                         <th>No</th>
+                        <th>순위</th>
                         <th>아이디</th>
                         <th>상태</th>
                         <th>메인키워드</th>
-                        <th>가격비교</th>
-                        <th>플러스</th>
                         <th>상품명</th>
                         <th>상품MID</th>
                         <th>가격비교MID</th>
@@ -237,34 +236,59 @@ export const initAdPage = (container) => {
                 <input type="text" id="ad-reg-price-mid" placeholder="가격비교MID를 입력하세요">
             </div>
             <div class="form-group">
-                <label>가격비교</label>
-                <select id="ad-reg-price-comparison" class="search-select" style="width: 100%;">
-                    <option value="false">N</option>
-                    <option value="true">Y</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>플러스</label>
-                <select id="ad-reg-plus" class="search-select" style="width: 100%;">
-                    <option value="false">N</option>
-                    <option value="true">Y</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>작업일수</label>
-                <input type="number" id="ad-reg-work-days" placeholder="작업일수를 입력하세요" min="1">
-            </div>
-            <div class="form-group">
                 <label>시작일</label>
-                <input type="date" id="ad-reg-start-date">
+                <input type="date" id="ad-reg-start-date" min="">
             </div>
             <div class="form-group">
                 <label>종료일</label>
-                <input type="date" id="ad-reg-end-date">
+                <input type="date" id="ad-reg-end-date" min="">
             </div>
             <div class="form-actions">
                 <button id="ad-reg-submit-btn" class="btn-submit">등록</button>
                 <button id="ad-reg-close-btn" class="btn-close">닫기</button>
+            </div>
+        </div>
+
+        <!-- CSV 파일 업로드 input (숨김) -->
+        <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+
+        <!-- 우측 수정 사이드바 -->
+        <div id="ad-edit-sidebar" class="right-sidebar">
+            <h3>광고 수정</h3>
+            <div class="form-group">
+                <label>상품 URL</label>
+                <input type="text" id="ad-edit-product-url" placeholder="상품 URL을 입력하세요">
+            </div>
+            <div class="form-group">
+                <label>상품명</label>
+                <input type="text" id="ad-edit-product-name" placeholder="상품명을 입력하세요">
+            </div>
+            <div class="form-group">
+                <label>메인 키워드</label>
+                <input type="text" id="ad-edit-keyword" placeholder="메인 키워드를 입력하세요">
+            </div>
+            <div class="form-group">
+                <label>메모</label>
+                <textarea id="ad-edit-memo" placeholder="메모를 입력하세요" rows="4"></textarea>
+            </div>
+            <div class="form-actions">
+                <button id="ad-edit-submit-btn" class="btn-submit">수정</button>
+                <button id="ad-edit-close-btn" class="btn-close">닫기</button>
+            </div>
+        </div>
+
+        <!-- 연장 모달 -->
+        <div id="extend-modal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 400px; margin: 15% auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="margin-top: 0;">광고 연장</h3>
+                <div class="form-group">
+                    <label>연장일수</label>
+                    <input type="number" id="extend-days-input" placeholder="연장할 일수를 입력하세요" min="1" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button id="extend-confirm-btn" class="btn-submit" style="margin-right: 10px;">확인</button>
+                    <button id="extend-cancel-btn" class="btn-close">취소</button>
+                </div>
             </div>
         </div>
     `;
@@ -305,9 +329,35 @@ const initAdEvents = () => {
     const deleteBtn = document.querySelector('.btn-delete');
     const editBtn = document.querySelector('.table-actions .btn-register');
     const openRegBtn = document.getElementById('open-register-btn');
+    const csvUploadBtn = document.getElementById('csv-upload-btn');
+    const csvFileInput = document.getElementById('csv-file-input');
     const adRightSidebar = document.getElementById('ad-right-sidebar');
     const adRegCloseBtn = document.getElementById('ad-reg-close-btn');
     const adRegSubmitBtn = document.getElementById('ad-reg-submit-btn');
+    const adEditSidebar = document.getElementById('ad-edit-sidebar');
+    const adEditCloseBtn = document.getElementById('ad-edit-close-btn');
+    const adEditSubmitBtn = document.getElementById('ad-edit-submit-btn');
+    const startDateInput = document.getElementById('ad-reg-start-date');
+    const endDateInput = document.getElementById('ad-reg-end-date');
+    
+    // 시작일 변경 시 종료일 최소값 업데이트
+    if (startDateInput && endDateInput) {
+        startDateInput.addEventListener('change', function() {
+            if (this.value) {
+                const startDate = new Date(this.value);
+                const minEndDate = new Date(startDate);
+                minEndDate.setDate(minEndDate.getDate() + 1);
+                endDateInput.min = minEndDate.toISOString().split('T')[0];
+                
+                // 종료일이 최소값보다 작으면 초기화
+                if (endDateInput.value && new Date(endDateInput.value) < minEndDate) {
+                    endDateInput.value = '';
+                }
+            } else {
+                endDateInput.min = '';
+            }
+        });
+    }
     
     // 전체 선택 체크박스
     if (selectAll) {
@@ -332,14 +382,20 @@ const initAdEvents = () => {
             document.getElementById('ad-reg-product-name').value = '';
             document.getElementById('ad-reg-product-mid').value = '';
             document.getElementById('ad-reg-price-mid').value = '';
-            document.getElementById('ad-reg-price-comparison').value = 'false';
-            document.getElementById('ad-reg-plus').value = 'false';
-            document.getElementById('ad-reg-work-days').value = '';
             
-            // 오늘 날짜를 기본값으로 설정
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('ad-reg-start-date').value = today;
-            document.getElementById('ad-reg-end-date').value = today;
+            // 시작일: 오늘 기준 다음날부터 입력 가능
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = tomorrow.toISOString().split('T')[0];
+            
+            const startDateInput = document.getElementById('ad-reg-start-date');
+            const endDateInput = document.getElementById('ad-reg-end-date');
+            
+            startDateInput.min = tomorrowStr;
+            startDateInput.value = '';
+            endDateInput.min = '';
+            endDateInput.value = '';
             
             adRightSidebar.classList.add('active');
         });
@@ -371,20 +427,6 @@ const initAdEvents = () => {
             const productName = document.getElementById('ad-reg-product-name').value.trim();
             const productMid = document.getElementById('ad-reg-product-mid').value.trim();
             const priceMid = document.getElementById('ad-reg-price-mid').value.trim();
-            const priceComparisonValue = document.getElementById('ad-reg-price-comparison').value;
-            const plusValue = document.getElementById('ad-reg-plus').value;
-            const workDaysValue = document.getElementById('ad-reg-work-days').value;
-            
-            // boolean 변환 (문자열 'true'/'false' 또는 boolean)
-            const priceComparison = priceComparisonValue === 'true' || priceComparisonValue === true;
-            const plus = plusValue === 'true' || plusValue === true;
-            
-            // 숫자 변환 (빈 문자열이면 null 또는 0)
-            const workDays = workDaysValue ? parseInt(workDaysValue) : 0;
-            if (isNaN(workDays)) {
-                alert('작업일수는 숫자로 입력해주세요.');
-                return;
-            }
             const startDate = document.getElementById('ad-reg-start-date').value;
             const endDate = document.getElementById('ad-reg-end-date').value;
             
@@ -402,8 +444,35 @@ const initAdEvents = () => {
                 alert('시작일과 종료일을 입력해주세요.');
                 return;
             }
-            if (new Date(startDate) > new Date(endDate)) {
-                alert('시작일은 종료일보다 이전이어야 합니다.');
+            
+            // 시작일이 오늘 기준 다음날 이후인지 확인
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            const startDateObj = new Date(startDate);
+            startDateObj.setHours(0, 0, 0, 0);
+            
+            if (startDateObj < tomorrow) {
+                alert('시작일은 오늘 기준 다음날부터 입력 가능합니다.');
+                return;
+            }
+            
+            // 종료일이 시작일 +1일 이후인지 확인
+            const minEndDate = new Date(startDateObj);
+            minEndDate.setDate(minEndDate.getDate() + 1);
+            const endDateObj = new Date(endDate);
+            endDateObj.setHours(0, 0, 0, 0);
+            
+            if (endDateObj < minEndDate) {
+                alert('종료일은 시작일 기준 최소 하루 이후여야 합니다.');
+                return;
+            }
+            
+            // 작업일수 자동 계산 (시작일과 종료일의 차이)
+            const workDays = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
+            if (workDays < 1) {
+                alert('작업일수는 최소 1일 이상이어야 합니다.');
                 return;
             }
             
@@ -432,8 +501,6 @@ const initAdEvents = () => {
                     product_name: productName || null,
                     product_mid: productMid || null,
                     price_comparison_mid: priceMid || null,
-                    price_comparison: priceComparison,
-                    plus: plus,
                     work_days: workDays,
                     start_date: startDate,
                     end_date: endDate
@@ -459,12 +526,20 @@ const initAdEvents = () => {
                     document.getElementById('ad-reg-product-name').value = '';
                     document.getElementById('ad-reg-product-mid').value = '';
                     document.getElementById('ad-reg-price-mid').value = '';
-                    document.getElementById('ad-reg-price-comparison').value = 'false';
-                    document.getElementById('ad-reg-plus').value = 'false';
-                    document.getElementById('ad-reg-work-days').value = '';
-                    const today = new Date().toISOString().split('T')[0];
-                    document.getElementById('ad-reg-start-date').value = today;
-                    document.getElementById('ad-reg-end-date').value = today;
+                    
+                    // 시작일: 오늘 기준 다음날부터 입력 가능
+                    const today = new Date();
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                    
+                    const startDateInput = document.getElementById('ad-reg-start-date');
+                    startDateInput.min = tomorrowStr;
+                    startDateInput.value = '';
+                    
+                    const endDateInput = document.getElementById('ad-reg-end-date');
+                    endDateInput.min = '';
+                    endDateInput.value = '';
                     
                     adRightSidebar.classList.remove('active');
                     
@@ -563,47 +638,381 @@ const initAdEvents = () => {
     }
 
     // 연장 버튼
+    const extendModal = document.getElementById('extend-modal');
+    const extendDaysInput = document.getElementById('extend-days-input');
+    const extendConfirmBtn = document.getElementById('extend-confirm-btn');
+    const extendCancelBtn = document.getElementById('extend-cancel-btn');
+    
+    console.log('연장 관련 요소 확인:', {
+        extendBtn: !!extendBtn,
+        extendModal: !!extendModal,
+        extendDaysInput: !!extendDaysInput,
+        extendConfirmBtn: !!extendConfirmBtn,
+        extendCancelBtn: !!extendCancelBtn
+    });
+    
     if (extendBtn) {
-        extendBtn.addEventListener('click', async () => {
+        extendBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('연장 버튼 클릭됨');
+            
             const rowChecks = document.querySelectorAll('.row-check:checked');
             if (rowChecks.length === 0) {
                 alert('연장할 광고를 선택해주세요.');
                 return;
             }
             
+            // 연장일수 입력 필드 초기화
+            if (extendDaysInput) {
+                extendDaysInput.value = '';
+            }
+            
+            // 모달 표시
+            if (extendModal) {
+                console.log('모달 표시 시도');
+                
+                // 모달을 body로 이동 (container 밖으로)
+                if (extendModal.parentElement !== document.body) {
+                    document.body.appendChild(extendModal);
+                }
+                
+                // 모든 스타일을 인라인으로 강제 설정
+                extendModal.style.cssText = `
+                    display: block !important;
+                    position: fixed !important;
+                    z-index: 99999 !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    overflow: auto !important;
+                    background-color: rgba(0, 0, 0, 0.5) !important;
+                `;
+                extendModal.classList.add('show');
+                
+                // 모달 콘텐츠도 확인
+                const modalContent = extendModal.querySelector('.modal-content');
+                if (modalContent) {
+                    modalContent.style.cssText = `
+                        background-color: #fefefe !important;
+                        margin: 15% auto !important;
+                        padding: 20px !important;
+                        border: 1px solid #888 !important;
+                        border-radius: 8px !important;
+                        width: 90% !important;
+                        max-width: 400px !important;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+                        position: relative !important;
+                        z-index: 100000 !important;
+                    `;
+                }
+                
+                console.log('모달 display:', window.getComputedStyle(extendModal).display);
+                console.log('모달 position:', window.getComputedStyle(extendModal).position);
+                console.log('모달 z-index:', window.getComputedStyle(extendModal).zIndex);
+            } else {
+                console.error('extend-modal 요소를 찾을 수 없습니다.');
+            }
+        });
+    } else {
+        console.error('extend-btn 요소를 찾을 수 없습니다.');
+    }
+
+    // 연장 모달 취소 버튼
+    if (extendCancelBtn) {
+        extendCancelBtn.addEventListener('click', () => {
+            if (extendModal) {
+                extendModal.classList.remove('show');
+                extendModal.style.cssText = 'display: none;';
+            }
+            if (extendDaysInput) {
+                extendDaysInput.value = '';
+            }
+        });
+    }
+
+    // 연장 모달 확인 버튼
+    if (extendConfirmBtn) {
+        extendConfirmBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const rowChecks = document.querySelectorAll('.row-check:checked');
+            if (rowChecks.length === 0) {
+                alert('연장할 광고를 선택해주세요.');
+                if (extendModal) extendModal.style.display = 'none';
+                return;
+            }
+            
             const adIds = Array.from(rowChecks).map(check => {
                 const row = check.closest('tr');
-                return row ? row.getAttribute('data-ad-id') : null;
-            }).filter(id => id !== null);
+                const id = row ? row.getAttribute('data-ad-id') : null;
+                // 문자열을 정수로 변환
+                return id ? parseInt(id, 10) : null;
+            }).filter(id => id !== null && !isNaN(id));
             
             if (adIds.length === 0) {
                 alert('연장할 광고를 선택해주세요.');
+                if (extendModal) extendModal.style.display = 'none';
+                return;
+            }
+
+            // 연장일수 확인
+            if (!extendDaysInput) {
+                alert('연장일수 입력 필드를 찾을 수 없습니다.');
                 return;
             }
             
-            if (!confirm(`선택한 ${adIds.length}개의 광고를 연장하시겠습니까?`)) {
+            const extendDays = extendDaysInput.value.trim();
+            if (!extendDays) {
+                alert('연장일수를 입력해주세요.');
                 return;
             }
+
+            const extendDaysNum = parseInt(extendDays, 10);
+            if (isNaN(extendDaysNum) || extendDaysNum < 1) {
+                alert('연장일수는 1 이상의 숫자로 입력해주세요.');
+                return;
+            }
+            
+            // 처리 중 플래그 설정 및 버튼 비활성화
+            extendConfirmBtn.disabled = true;
+            extendConfirmBtn.textContent = '처리 중...';
             
             try {
                 const response = await fetch(`${API_BASE_URL}/advertisements/extend`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify({
-                        ad_ids: adIds
+                        ad_ids: adIds,
+                        extend_days: extendDaysNum
                     })
                 });
                 
                 if (response.ok) {
-                    alert('선택한 광고가 연장되었습니다.');
+                    alert(`선택한 ${adIds.length}개의 광고가 ${extendDaysNum}일 연장되었습니다.`);
+                    if (extendModal) {
+                        extendModal.classList.remove('show');
+                        extendModal.style.cssText = 'display: none;';
+                    }
+                    if (extendDaysInput) {
+                        extendDaysInput.value = '';
+                    }
                     await loadAdList();
                 } else {
-                    const error = await response.json().catch(() => ({ message: '연장 실패' }));
-                    alert(`연장 실패: ${error.message || '서버 오류가 발생했습니다.'}`);
+                    // 더 자세한 에러 정보 출력
+                    let errorData = {};
+                    let errorText = '';
+                    try {
+                        errorText = await response.text();
+                        console.error('연장 실패 - 응답 텍스트:', errorText);
+                        if (errorText) {
+                            try {
+                                errorData = JSON.parse(errorText);
+                            } catch (parseError) {
+                                errorData = { message: errorText || `서버 오류 (${response.status})` };
+                            }
+                        } else {
+                            errorData = { message: `서버 오류 (${response.status})` };
+                        }
+                    } catch (e) {
+                        console.error('에러 파싱 실패:', e);
+                        errorData = { message: `서버 오류 (${response.status})` };
+                    }
+                    
+                    console.error('연장 실패 상세:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorData: errorData,
+                        errorText: errorText
+                    });
+                    
+                    // 422 에러인 경우 더 자세한 정보 표시
+                    if (response.status === 422) {
+                        let errorMessage = '입력 데이터가 올바르지 않습니다.\n\n';
+                        if (errorData.detail) {
+                            if (Array.isArray(errorData.detail)) {
+                                errorMessage += errorData.detail.map(err => {
+                                    if (typeof err === 'object' && err.loc && err.msg) {
+                                        return `- ${err.loc.join('.')}: ${err.msg}`;
+                                    }
+                                    return `- ${JSON.stringify(err)}`;
+                                }).join('\n');
+                            } else if (typeof errorData.detail === 'string') {
+                                errorMessage += errorData.detail;
+                            } else {
+                                errorMessage += JSON.stringify(errorData.detail, null, 2);
+                            }
+                        } else if (errorData.message) {
+                            errorMessage += errorData.message;
+                        } else {
+                            errorMessage += JSON.stringify(errorData, null, 2);
+                        }
+                        alert(errorMessage);
+                    } else {
+                        alert(`연장 실패: ${errorData.message || errorData.detail || '서버 오류가 발생했습니다.'}`);
+                    }
                 }
             } catch (error) {
                 console.error('연장 API 호출 오류:', error);
-                alert('서버 연결에 실패했습니다.');
+                alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
+            } finally {
+                // 처리 중 플래그 해제 및 버튼 활성화
+                extendConfirmBtn.disabled = false;
+                extendConfirmBtn.textContent = '확인';
+            }
+        });
+    }
+
+    // 모달 외부 클릭 시 닫기
+    if (extendModal) {
+        extendModal.addEventListener('click', (e) => {
+            if (e.target === extendModal) {
+                extendModal.classList.remove('show');
+                extendModal.style.cssText = 'display: none;';
+                if (extendDaysInput) {
+                    extendDaysInput.value = '';
+                }
+            }
+        });
+    }
+
+    // Enter 키로 연장 확인
+    if (extendDaysInput) {
+        extendDaysInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && extendConfirmBtn) {
+                e.preventDefault();
+                extendConfirmBtn.click();
+            }
+        });
+    }
+
+    // CSV 업로드 버튼
+    if (csvUploadBtn && csvFileInput) {
+        csvUploadBtn.addEventListener('click', () => {
+            csvFileInput.click();
+        });
+        
+        // 파일 선택 시 업로드
+        csvFileInput.addEventListener('change', async (e) => {
+            const csvFile = e.target.files[0];
+            if (!csvFile) {
+                return;
+            }
+            
+            // CSV 파일인지 확인
+            if (!csvFile.name.endsWith('.csv')) {
+                alert('CSV 파일만 업로드 가능합니다.');
+                csvFileInput.value = '';
+                return;
+            }
+            
+            if (!confirm(`"${csvFile.name}" 파일을 업로드하시겠습니까?`)) {
+                csvFileInput.value = '';
+                return;
+            }
+            
+            try {
+                // 토큰 가져오기
+                const token = sessionStorage.getItem('sessionToken');
+                if (!token) {
+                    alert('로그인 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+                    csvFileInput.value = '';
+                    return;
+                }
+                
+                // FormData 생성
+                const formData = new FormData();
+                formData.append('file', csvFile);
+                
+                // 업로드 중 버튼 비활성화
+                csvUploadBtn.disabled = true;
+                csvUploadBtn.textContent = '업로드 중...';
+                
+                console.log('CSV 업로드 요청:', csvFile.name);
+                
+                const response = await fetch(`${API_BASE_URL}/advertisements/upload-csv`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                console.log('CSV 업로드 응답 상태:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    alert('CSV 파일이 성공적으로 업로드되었습니다.');
+                    
+                    // 파일 input 초기화
+                    csvFileInput.value = '';
+                    
+                    // 광고 목록 새로고침
+                    await loadAdList();
+                } else {
+                    // 에러 처리
+                    let errorData = {};
+                    let errorText = '';
+                    try {
+                        errorText = await response.text();
+                        console.error('CSV 업로드 실패 - 응답 텍스트:', errorText);
+                        if (errorText) {
+                            try {
+                                errorData = JSON.parse(errorText);
+                            } catch (parseError) {
+                                errorData = { message: errorText };
+                            }
+                        }
+                    } catch (e) {
+                        errorData = { message: `서버 오류 (${response.status})` };
+                    }
+                    
+                    console.error('CSV 업로드 실패 상세:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorData: errorData
+                    });
+                    
+                    // 422 에러인 경우 더 자세한 정보 표시
+                    if (response.status === 422) {
+                        let errorMessage = 'CSV 파일 형식이 올바르지 않습니다.\n\n';
+                        if (errorData.detail) {
+                            if (Array.isArray(errorData.detail)) {
+                                errorMessage += errorData.detail.map(err => {
+                                    if (typeof err === 'object' && err.loc && err.msg) {
+                                        return `- ${err.loc.join('.')}: ${err.msg}`;
+                                    }
+                                    return `- ${JSON.stringify(err)}`;
+                                }).join('\n');
+                            } else if (typeof errorData.detail === 'string') {
+                                errorMessage += errorData.detail;
+                            } else {
+                                errorMessage += JSON.stringify(errorData.detail, null, 2);
+                            }
+                        } else if (errorData.message) {
+                            errorMessage += errorData.message;
+                        } else {
+                            errorMessage += JSON.stringify(errorData, null, 2);
+                        }
+                        alert(errorMessage);
+                    } else {
+                        alert(`CSV 업로드 실패: ${errorData.message || errorData.detail || '서버 오류가 발생했습니다.'}`);
+                    }
+                    
+                    // 파일 input 초기화
+                    csvFileInput.value = '';
+                }
+            } catch (error) {
+                console.error('CSV 업로드 API 호출 오류:', error);
+                alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
+                csvFileInput.value = '';
+            } finally {
+                // 버튼 활성화
+                csvUploadBtn.disabled = false;
+                csvUploadBtn.textContent = 'CSV 업로드';
             }
         });
     }
@@ -672,11 +1081,190 @@ const initAdEvents = () => {
         if (e.target.classList.contains('btn-edit-row')) {
             const adId = e.target.getAttribute('data-ad-id');
             if (adId) {
-                // 개별 수정 기능은 추후 구현
-                alert(`광고 ID ${adId} 수정 기능은 준비 중입니다.`);
+                // 광고 정보 가져오기
+                try {
+                    const response = await fetch(`${API_BASE_URL}/advertisements/${adId}`, {
+                        method: 'GET',
+                        headers: getAuthHeaders(),
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const ad = data.data?.advertisement || data.data || data;
+                        
+                        // 수정 사이드바에 데이터 채우기
+                        document.getElementById('ad-edit-product-url').value = ad.product_url || '';
+                        document.getElementById('ad-edit-product-name').value = ad.product_name || '';
+                        document.getElementById('ad-edit-keyword').value = ad.main_keyword || '';
+                        document.getElementById('ad-edit-memo').value = ad.memo || '';
+                        
+                        // 현재 수정 중인 광고 ID 저장
+                        adEditSidebar.setAttribute('data-edit-ad-id', adId);
+                        
+                        // 수정 사이드바 열기
+                        adEditSidebar.classList.add('active');
+                    } else {
+                        const error = await response.json().catch(() => ({ message: '광고 정보를 불러올 수 없습니다.' }));
+                        alert(`광고 정보를 불러올 수 없습니다.\n오류: ${error.message || error.detail || '서버 오류'}`);
+                    }
+                } catch (error) {
+                    console.error('광고 정보 로드 오류:', error);
+                    alert('광고 정보를 불러오는 중 오류가 발생했습니다.');
+                }
             }
         }
     });
+
+    // 수정 사이드바 닫기
+    if (adEditCloseBtn) {
+        adEditCloseBtn.addEventListener('click', () => {
+            adEditSidebar.classList.remove('active');
+            // 폼 초기화
+            document.getElementById('ad-edit-product-url').value = '';
+            document.getElementById('ad-edit-product-name').value = '';
+            document.getElementById('ad-edit-keyword').value = '';
+            document.getElementById('ad-edit-memo').value = '';
+            adEditSidebar.removeAttribute('data-edit-ad-id');
+        });
+    }
+
+    // 광고 수정 폼 제출
+    let isSubmittingEdit = false;
+    if (adEditSubmitBtn) {
+        adEditSubmitBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (isSubmittingEdit) {
+                console.log('광고 수정이 이미 처리 중입니다.');
+                return;
+            }
+
+            const adId = adEditSidebar.getAttribute('data-edit-ad-id');
+            if (!adId) {
+                alert('수정할 광고를 선택해주세요.');
+                return;
+            }
+
+            const productUrl = document.getElementById('ad-edit-product-url').value.trim();
+            const productName = document.getElementById('ad-edit-product-name').value.trim();
+            const keyword = document.getElementById('ad-edit-keyword').value.trim();
+            const memo = document.getElementById('ad-edit-memo').value.trim();
+
+            // 유효성 검사
+            if (!keyword) {
+                alert('메인 키워드를 입력해주세요.');
+                return;
+            }
+
+            // 처리 중 플래그 설정 및 버튼 비활성화
+            isSubmittingEdit = true;
+            adEditSubmitBtn.disabled = true;
+            adEditSubmitBtn.textContent = '수정 중...';
+
+            try {
+                // 현재 로그인한 사용자 정보 가져오기
+                const currentUsername = sessionStorage.getItem('userName');
+                
+                const requestBody = {
+                    product_url: productUrl || null,
+                    product_name: productName || null,
+                    main_keyword: keyword,
+                    memo: memo || null,
+                    change_log: {
+                        changed_by: currentUsername || 'unknown',
+                        changed_at: new Date().toISOString(),
+                        action_type: 'UPDATE'
+                    }
+                };
+
+                console.log('광고 수정 요청 데이터:', requestBody);
+
+                const response = await fetch(`${API_BASE_URL}/advertisements/${adId}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(requestBody)
+                });
+
+                console.log('광고 수정 응답 상태:', response.status);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    alert('광고가 수정되었습니다.');
+
+                    // 폼 초기화
+                    document.getElementById('ad-edit-product-url').value = '';
+                    document.getElementById('ad-edit-product-name').value = '';
+                    document.getElementById('ad-edit-keyword').value = '';
+                    document.getElementById('ad-edit-memo').value = '';
+                    adEditSidebar.removeAttribute('data-edit-ad-id');
+
+                    adEditSidebar.classList.remove('active');
+
+                    // 광고 목록 새로고침
+                    await loadAdList();
+                } else {
+                    let errorData = {};
+                    let errorText = '';
+                    try {
+                        errorText = await response.text();
+                        console.error('광고 수정 실패 - 응답 텍스트:', errorText);
+                        if (errorText) {
+                            try {
+                                errorData = JSON.parse(errorText);
+                            } catch (parseError) {
+                                errorData = { message: errorText || `서버 오류 (${response.status})` };
+                            }
+                        } else {
+                            errorData = { message: `서버 오류 (${response.status})` };
+                        }
+                    } catch (e) {
+                        console.error('에러 파싱 실패:', e);
+                        errorData = { message: `서버 오류 (${response.status})` };
+                    }
+
+                    console.error('수정 실패 상세:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorData: errorData,
+                        errorText: errorText
+                    });
+
+                    if (response.status === 422) {
+                        let errorMessage = '입력 데이터가 올바르지 않습니다.\n\n';
+                        if (errorData.detail) {
+                            if (Array.isArray(errorData.detail)) {
+                                errorMessage += errorData.detail.map(err => {
+                                    if (typeof err === 'object' && err.loc && err.msg) {
+                                        return `- ${err.loc.join('.')}: ${err.msg}`;
+                                    }
+                                    return `- ${JSON.stringify(err)}`;
+                                }).join('\n');
+                            } else if (typeof errorData.detail === 'string') {
+                                errorMessage += errorData.detail;
+                            } else {
+                                errorMessage += JSON.stringify(errorData.detail, null, 2);
+                            }
+                        } else if (errorData.message) {
+                            errorMessage += errorData.message;
+                        } else {
+                            errorMessage += JSON.stringify(errorData, null, 2);
+                        }
+                        alert(errorMessage);
+                    } else {
+                        alert(`수정 실패: ${errorData.message || errorData.detail || '서버 오류가 발생했습니다.'}`);
+                    }
+                }
+            } catch (error) {
+                console.error('API 호출 오류:', error);
+                alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
+            } finally {
+                isSubmittingEdit = false;
+                adEditSubmitBtn.disabled = false;
+                adEditSubmitBtn.textContent = '수정';
+            }
+        });
+    }
 
     // 초기 광고 목록 로드
     loadAdList();

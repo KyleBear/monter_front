@@ -45,7 +45,7 @@ const renderAdTable = (ads) => {
 
     if (!ads || ads.length === 0) {
         console.log('광고 데이터가 없습니다.');
-        tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; padding: 20px;">등록된 광고가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px;">등록된 광고가 없습니다.</td></tr>';
         return;
     }
     
@@ -66,11 +66,11 @@ const renderAdTable = (ads) => {
             <tr data-ad-id="${ad.ad_id || ad.id}">
                 <td class="checkbox-col"><input type="checkbox" class="row-check"></td>
                 <td>${index + 1}</td>
-                <td>${ad.rank || ad.ranking || '-'}</td>
                 <td>${ad.username || ad.userid || '-'}</td>
                 <td><span style="color: ${status.color};">${status.text}</span></td>
                 <td>${ad.main_keyword || '-'}</td>
                 <td>${ad.product_name || '-'}</td>
+                <td>${ad.rank || '-'}</td>
                 <td>${ad.product_mid || '-'}</td>
                 <td>${ad.price_comparison_mid || '-'}</td>
                 <td>${ad.work_days || 0}</td>
@@ -83,6 +83,35 @@ const renderAdTable = (ads) => {
 
     // 체크박스 이벤트 다시 바인딩
     bindRowChecks();
+};
+
+// 소속 사용자 목록 로드
+const loadAffiliatedUsers = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/accounts`, {
+            method: 'GET',
+            headers: getAuthHeaders(),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            let accounts = [];
+            if (data.data && data.data.accounts && Array.isArray(data.data.accounts)) {
+                accounts = data.data.accounts;
+            } else if (data.accounts && Array.isArray(data.accounts)) {
+                accounts = data.accounts;
+            } else if (Array.isArray(data)) {
+                accounts = data;
+            }
+            return accounts;
+        } else {
+            console.error('소속 사용자 목록 로드 실패:', response.status);
+            return [];
+        }
+    } catch (error) {
+        console.error('소속 사용자 목록 로드 오류:', error);
+        return [];
+    }
 };
 
 // 광고 목록 로드
@@ -126,6 +155,9 @@ const loadAdList = async (searchParams = {}) => {
 };
 
 export const initAdPage = (container) => {
+    // 현재 사용자 권한 확인
+    const userRole = sessionStorage.getItem('userRole');
+    
     container.innerHTML = `
         <div class="account-info">
             <strong>광고관리</strong><br>
@@ -192,11 +224,11 @@ export const initAdPage = (container) => {
                     <tr>
                         <th class="checkbox-col"><input type="checkbox" id="select-all"></th>
                         <th>No</th>
-                        <th>순위</th>
                         <th>아이디</th>
                         <th>상태</th>
                         <th>메인키워드</th>
                         <th>상품명</th>
+                        <th>순위</th>
                         <th>상품MID</th>
                         <th>가격비교MID</th>
                         <th>작업일수</th>
@@ -214,26 +246,23 @@ export const initAdPage = (container) => {
         <!-- 우측 등록 사이드바 -->
         <div id="ad-right-sidebar" class="right-sidebar">
             <h3>광고 등록</h3>
-            <!-- 아이디 입력 필드 주석처리: 현재 로그인한 사용자의 아이디가 자동으로 등록됨 -->
-            <!-- <div class="form-group">
-                <label>아이디</label>
-                <input type="text" id="ad-reg-userid" placeholder="아이디를 입력하세요">
-            </div> -->
+            <div class="form-group" id="ad-reg-user-select-group" style="display: none;">
+                <label>사용자 <span style="color: red;">*</span></label>
+                <select id="ad-reg-user-select" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">로딩 중...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>스토어 URL <span style="color: red;">*</span></label>
+                <input type="text" id="ad-reg-store-url" placeholder="스토어 URL을 입력하세요" required>
+            </div>
+            <div class="form-group">
+                <label>쇼핑 URL <span style="color: red;">*</span></label>
+                <input type="text" id="ad-reg-shopping-url" placeholder="쇼핑 URL을 입력하세요" required>
+            </div>
             <div class="form-group">
                 <label>메인키워드</label>
                 <input type="text" id="ad-reg-keyword" placeholder="메인키워드를 입력하세요">
-            </div>
-            <div class="form-group">
-                <label>상품명</label>
-                <input type="text" id="ad-reg-product-name" placeholder="상품명을 입력하세요">
-            </div>
-            <div class="form-group">
-                <label>상품MID</label>
-                <input type="text" id="ad-reg-product-mid" placeholder="상품MID를 입력하세요">
-            </div>
-            <div class="form-group">
-                <label>가격비교MID</label>
-                <input type="text" id="ad-reg-price-mid" placeholder="가격비교MID를 입력하세요">
             </div>
             <div class="form-group">
                 <label>시작일</label>
@@ -260,12 +289,12 @@ export const initAdPage = (container) => {
                 <input type="text" id="ad-edit-product-url" placeholder="상품 URL을 입력하세요">
             </div>
             <div class="form-group">
-                <label>상품명</label>
-                <input type="text" id="ad-edit-product-name" placeholder="상품명을 입력하세요">
+                <label>가격비교 URL</label>
+                <input type="text" id="ad-edit-price-url" placeholder="가격비교 URL을 입력하세요">
             </div>
             <div class="form-group">
-                <label>메인 키워드</label>
-                <input type="text" id="ad-edit-keyword" placeholder="메인 키워드를 입력하세요">
+                <label>메인 키워드 <span style="color: red;">*</span></label>
+                <input type="text" id="ad-edit-keyword" placeholder="메인 키워드를 입력하세요" required>
             </div>
             <div class="form-group">
                 <label>메모</label>
@@ -294,6 +323,19 @@ export const initAdPage = (container) => {
     `;
 
     initAdEvents();
+    
+    // 권한에 따른 버튼 제어
+    const openRegBtn = document.getElementById('open-register-btn');
+    const csvUploadBtn = document.getElementById('csv-upload-btn');
+    const deleteBtn = document.querySelector('.btn-delete');
+    
+    if (userRole === 'advertiser') {
+        // 광고주: 등록 버튼 숨기기
+        if (openRegBtn) openRegBtn.style.display = 'none';
+        if (csvUploadBtn) csvUploadBtn.style.display = 'none';
+        // 광고주: 삭제 버튼 숨기기
+        if (deleteBtn) deleteBtn.style.display = 'none';
+    }
 };
 
 const bindRowChecks = () => {
@@ -375,13 +417,40 @@ const initAdEvents = () => {
 
     // 등록 사이드바 열기
     if (openRegBtn) {
-        openRegBtn.addEventListener('click', () => {
+        openRegBtn.addEventListener('click', async () => {
+            const userRole = sessionStorage.getItem('userRole');
+            const userSelectGroup = document.getElementById('ad-reg-user-select-group');
+            const userSelect = document.getElementById('ad-reg-user-select');
+            
+            // 대행사인 경우 사용자 선택 필드 표시 및 필수 설정
+            if (userRole === 'agency') {
+                if (userSelectGroup) userSelectGroup.style.display = 'block';
+                if (userSelect) {
+                    userSelect.innerHTML = '<option value="">로딩 중...</option>';
+                    userSelect.required = true;
+                    
+                    // 소속 사용자 목록 로드
+                    const accounts = await loadAffiliatedUsers();
+                    
+                    userSelect.innerHTML = '<option value="">사용자를 선택하세요</option>';
+                    
+                    // 소속 사용자 추가 (광고주만)
+                    accounts.forEach(account => {
+                        if (account.role === 'advertiser') {
+                            userSelect.innerHTML += `<option value="${account.user_id}|${account.username}">${account.username}</option>`;
+                        }
+                    });
+                }
+            } else {
+                // 대행사가 아닌 경우 사용자 선택 필드 숨기기
+                if (userSelectGroup) userSelectGroup.style.display = 'none';
+                if (userSelect) userSelect.required = false;
+            }
+            
             // 폼 초기화
-            // document.getElementById('ad-reg-userid').value = '';  // 아이디 필드 주석처리
+            document.getElementById('ad-reg-store-url').value = '';
+            document.getElementById('ad-reg-shopping-url').value = '';
             document.getElementById('ad-reg-keyword').value = '';
-            document.getElementById('ad-reg-product-name').value = '';
-            document.getElementById('ad-reg-product-mid').value = '';
-            document.getElementById('ad-reg-price-mid').value = '';
             
             // 시작일: 오늘 기준 다음날부터 입력 가능
             const today = new Date();
@@ -422,20 +491,21 @@ const initAdEvents = () => {
                 return;
             }
             
-            // const userid = document.getElementById('ad-reg-userid').value.trim();  // 아이디 필드 주석처리: 세션 스토리지에서 가져옴
+            const storeUrl = document.getElementById('ad-reg-store-url').value.trim();
+            const shoppingUrl = document.getElementById('ad-reg-shopping-url').value.trim();
             const keyword = document.getElementById('ad-reg-keyword').value.trim();
-            const productName = document.getElementById('ad-reg-product-name').value.trim();
-            const productMid = document.getElementById('ad-reg-product-mid').value.trim();
-            const priceMid = document.getElementById('ad-reg-price-mid').value.trim();
             const startDate = document.getElementById('ad-reg-start-date').value;
             const endDate = document.getElementById('ad-reg-end-date').value;
             
             // 유효성 검사
-            // 아이디 유효성 검사 주석처리: 세션 스토리지에서 자동으로 가져옴
-            // if (!userid) {
-            //     alert('아이디를 입력해주세요.');
-            //     return;
-            // }
+            if (!storeUrl) {
+                alert('스토어 URL을 입력해주세요.');
+                return;
+            }
+            if (!shoppingUrl) {
+                alert('쇼핑 URL을 입력해주세요.');
+                return;
+            }
             if (!keyword) {
                 alert('메인키워드를 입력해주세요.');
                 return;
@@ -471,10 +541,6 @@ const initAdEvents = () => {
             
             // 작업일수 자동 계산 (시작일과 종료일의 차이)
             const workDays = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
-            if (workDays < 1) {
-                alert('작업일수는 최소 1일 이상이어야 합니다.');
-                return;
-            }
             
             // 처리 중 플래그 설정 및 버튼 비활성화
             isSubmittingAd = true;
@@ -482,9 +548,9 @@ const initAdEvents = () => {
             adRegSubmitBtn.textContent = '등록 중...';
             
             try {
-                // 세션 스토리지에서 현재 로그인한 사용자 정보 가져오기
-                const currentUsername = sessionStorage.getItem('userName');  // 현재 로그인한 사용자의 아이디
-                const currentUserId = sessionStorage.getItem('userId');      // user_id는 인덱스 같은 것 (숫자 ID)
+                const userRole = sessionStorage.getItem('userRole');
+                const currentUsername = sessionStorage.getItem('userName');
+                const currentUserId = sessionStorage.getItem('userId');
                 
                 if (!currentUsername) {
                     alert('로그인 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
@@ -494,13 +560,32 @@ const initAdEvents = () => {
                     return;
                 }
                 
+                // 대행사인 경우 사용자 선택 필수 검증
+                let selectedUserId = currentUserId;
+                let selectedUsername = currentUsername;
+                
+                if (userRole === 'agency') {
+                    const userSelect = document.getElementById('ad-reg-user-select');
+                    if (!userSelect || !userSelect.value) {
+                        alert('사용자를 선택해주세요.');
+                        isSubmittingAd = false;
+                        adRegSubmitBtn.disabled = false;
+                        adRegSubmitBtn.textContent = '등록';
+                        return;
+                    }
+                    
+                    const [userId, username] = userSelect.value.split('|');
+                    selectedUserId = userId;
+                    selectedUsername = username;
+                }
+                
+                // 광고 등록 요청
                 const requestBody = {
-                    user_id: currentUserId ? parseInt(currentUserId, 10) : null,  // user_id는 인덱스 같은 것
-                    username: currentUsername,  // 세션 스토리지에서 가져온 현재 로그인한 사용자의 아이디
+                    user_id: selectedUserId ? parseInt(selectedUserId, 10) : null,
+                    username: selectedUsername,
+                    store_url: storeUrl,
+                    shopping_url: shoppingUrl,
                     main_keyword: keyword,
-                    product_name: productName || null,
-                    product_mid: productMid || null,
-                    price_comparison_mid: priceMid || null,
                     work_days: workDays,
                     start_date: startDate,
                     end_date: endDate
@@ -523,9 +608,6 @@ const initAdEvents = () => {
                     // 폼 초기화
                     // document.getElementById('ad-reg-userid').value = '';  // 아이디 필드 주석처리
                     document.getElementById('ad-reg-keyword').value = '';
-                    document.getElementById('ad-reg-product-name').value = '';
-                    document.getElementById('ad-reg-product-mid').value = '';
-                    document.getElementById('ad-reg-price-mid').value = '';
                     
                     // 시작일: 오늘 기준 다음날부터 입력 가능
                     const today = new Date();
@@ -1094,7 +1176,7 @@ const initAdEvents = () => {
                         
                         // 수정 사이드바에 데이터 채우기
                         document.getElementById('ad-edit-product-url').value = ad.product_url || '';
-                        document.getElementById('ad-edit-product-name').value = ad.product_name || '';
+                        document.getElementById('ad-edit-price-url').value = ad.price_comparison_url || ad.price_url || '';
                         document.getElementById('ad-edit-keyword').value = ad.main_keyword || '';
                         document.getElementById('ad-edit-memo').value = ad.memo || '';
                         
@@ -1121,7 +1203,7 @@ const initAdEvents = () => {
             adEditSidebar.classList.remove('active');
             // 폼 초기화
             document.getElementById('ad-edit-product-url').value = '';
-            document.getElementById('ad-edit-product-name').value = '';
+            document.getElementById('ad-edit-price-url').value = '';
             document.getElementById('ad-edit-keyword').value = '';
             document.getElementById('ad-edit-memo').value = '';
             adEditSidebar.removeAttribute('data-edit-ad-id');
@@ -1147,7 +1229,7 @@ const initAdEvents = () => {
             }
 
             const productUrl = document.getElementById('ad-edit-product-url').value.trim();
-            const productName = document.getElementById('ad-edit-product-name').value.trim();
+            const priceUrl = document.getElementById('ad-edit-price-url').value.trim();
             const keyword = document.getElementById('ad-edit-keyword').value.trim();
             const memo = document.getElementById('ad-edit-memo').value.trim();
 
@@ -1167,8 +1249,8 @@ const initAdEvents = () => {
                 const currentUsername = sessionStorage.getItem('userName');
                 
                 const requestBody = {
-                    product_url: productUrl || null,
-                    product_name: productName || null,
+                    store_url: productUrl || null,
+                    shopping_url: priceUrl || null,
                     main_keyword: keyword,
                     memo: memo || null,
                     change_log: {
@@ -1194,7 +1276,7 @@ const initAdEvents = () => {
 
                     // 폼 초기화
                     document.getElementById('ad-edit-product-url').value = '';
-                    document.getElementById('ad-edit-product-name').value = '';
+                    document.getElementById('ad-edit-price-url').value = '';
                     document.getElementById('ad-edit-keyword').value = '';
                     document.getElementById('ad-edit-memo').value = '';
                     adEditSidebar.removeAttribute('data-edit-ad-id');

@@ -219,6 +219,7 @@ export const initAdPage = (container) => {
                 <button class="btn-extend" id="extend-btn">연장</button>
                 <button class="btn-register" id="open-register-btn">등록</button>
                 <button class="btn-register" id="csv-upload-btn" style="background-color: #28a745;">CSV 업로드</button>
+                <button class="btn-register" id="csv-download-btn" style="background-color: #007bff; color: white;">CSV 다운로드</button>
             </div>
         </div>
 
@@ -1356,5 +1357,108 @@ const initAdEvents = () => {
     }
 
     // 초기 광고 목록 로드
+    // CSV 다운로드 버튼
+    const csvDownloadBtn = document.getElementById('csv-download-btn');
+    if (csvDownloadBtn) {
+        csvDownloadBtn.addEventListener('click', async () => {
+            try {
+                // 현재 검색 조건 가져오기
+                const searchType = searchSelect ? searchSelect.value : 'all';
+                const searchKeyword = searchInput ? searchInput.value.trim() : '';
+                
+                // CSV 다운로드 파라미터 구성
+                const params = {};
+                if (searchKeyword) {
+                    params[searchType === 'all' ? 'keyword' : searchType] = searchKeyword;
+                }
+                
+                const queryString = new URLSearchParams(params).toString();
+                const url = `${API_BASE_URL}/advertisements/export${queryString ? '?' + queryString : ''}`;
+                
+                console.log('CSV 다운로드 요청:', url);
+                
+                // CSV 다운로드 요청
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: getAuthHeaders(),
+                });
+                
+                if (!response.ok) {
+                    let errorData = {};
+                    let errorText = '';
+                    try {
+                        errorText = await response.text();
+                        console.error('CSV 다운로드 실패 - 응답 텍스트:', errorText);
+                        if (errorText) {
+                            try {
+                                errorData = JSON.parse(errorText);
+                            } catch (parseError) {
+                                errorData = { message: errorText || `서버 오류 (${response.status})` };
+                            }
+                        } else {
+                            errorData = { message: `서버 오류 (${response.status})` };
+                        }
+                    } catch (e) {
+                        console.error('에러 파싱 실패:', e);
+                        errorData = { message: `서버 오류 (${response.status})` };
+                    }
+
+                    console.error('CSV 다운로드 실패 상세:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorData: errorData,
+                        errorText: errorText,
+                        url: url
+                    });
+
+                    if (response.status === 422) {
+                        let errorMessage = '입력 데이터가 올바르지 않습니다.\n\n';
+                        if (errorData.detail) {
+                            if (Array.isArray(errorData.detail)) {
+                                errorMessage += errorData.detail.map(err => {
+                                    if (err.loc && err.msg) {
+                                        return `${err.loc.join('.')}: ${err.msg}`;
+                                    }
+                                    return err.msg || JSON.stringify(err);
+                                }).join('\n');
+                            } else if (typeof errorData.detail === 'string') {
+                                errorMessage += errorData.detail;
+                            } else {
+                                errorMessage += JSON.stringify(errorData.detail, null, 2);
+                            }
+                        } else {
+                            errorMessage += errorData.message || '파라미터 형식이 올바르지 않습니다.';
+                        }
+                        alert(errorMessage);
+                    } else {
+                        alert(`CSV 다운로드 실패: ${errorData.message || errorData.detail || '서버 오류가 발생했습니다.'}`);
+                    }
+                    return;
+                }
+                
+                // CSV 파일 다운로드
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                
+                // 파일명 생성 (검색 조건 포함)
+                const dateStr = new Date().toISOString().split('T')[0];
+                const filename = `광고목록_${dateStr}.csv`;
+                link.download = filename;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(downloadUrl);
+                
+                console.log('CSV 다운로드 완료:', filename);
+            } catch (error) {
+                console.error('CSV 다운로드 오류:', error);
+                alert('CSV 다운로드 중 오류가 발생했습니다.');
+            }
+        });
+    }
+
     loadAdList();
 };

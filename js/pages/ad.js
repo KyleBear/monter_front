@@ -69,7 +69,11 @@ const renderAdTable = (ads) => {
                 <td>${ad.username || ad.userid || '-'}</td>
                 <td><span style="color: ${status.color};">${status.text}</span></td>
                 <td>${ad.main_keyword || '-'}</td>
-                <td>${ad.product_name || '-'}</td>
+                <td>${
+                    ad.product_name && ad.store_url 
+                        ? `<a href="${ad.store_url}" target="_blank" style="color: #007bff; text-decoration: underline; cursor: pointer;">${ad.product_name}</a>`
+                        : ad.product_name || '-'
+                }</td>
                 <td>${ad.rank || '-'}</td>
                 <td>${ad.product_mid || '-'}</td>
                 <td>${ad.price_comparison_mid || '-'}</td>

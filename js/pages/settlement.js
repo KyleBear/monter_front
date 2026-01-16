@@ -68,6 +68,7 @@ export const initSettlementPage = (container) => {
                 </select>
                 <input type="text" class="search-input" placeholder="검색어를 입력해주세요.">
                 <button class="search-btn">🔍</button>
+                <button class="btn-csv-download" id="csv-download-btn" style="margin-left: 10px; padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">CSV 다운로드</button>
             </div>
         </div>
 
@@ -424,6 +425,65 @@ const initSettlementEvents = () => {
     //         }
     //     }
     // });
+
+    // CSV 다운로드 버튼
+    const csvDownloadBtn = document.getElementById('csv-download-btn');
+    if (csvDownloadBtn) {
+        csvDownloadBtn.addEventListener('click', async () => {
+            try {
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                const searchKeyword = document.querySelector('.search-input')?.value.trim() || '';
+                
+                // CSV 다운로드 파라미터 구성
+                const params = {
+                    start_date: startDate,
+                    end_date: endDate
+                };
+                
+                if (searchKeyword) {
+                    params.keyword = searchKeyword;
+                }
+                
+                const queryString = new URLSearchParams(params).toString();
+                const url = `${API_BASE_URL}/settlements/download-csv${queryString ? '?' + queryString : ''}`;
+                
+                console.log('CSV 다운로드 요청:', url);
+                
+                // CSV 다운로드 요청
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: getAuthHeaders(),
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'CSV 다운로드 실패' }));
+                    alert(`CSV 다운로드 실패: ${errorData.message || errorData.detail || '서버 오류가 발생했습니다.'}`);
+                    return;
+                }
+                
+                // CSV 파일 다운로드
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                
+                // 파일명 생성 (날짜 범위 포함)
+                const filename = `정산로그_${startDate}_${endDate}.csv`;
+                link.download = filename;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(downloadUrl);
+                
+                console.log('CSV 다운로드 완료:', filename);
+            } catch (error) {
+                console.error('CSV 다운로드 오류:', error);
+                alert('CSV 다운로드 중 오류가 발생했습니다.');
+            }
+        });
+    }
 
     // 초기 로드
     updateDateRange();

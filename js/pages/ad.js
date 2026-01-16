@@ -253,12 +253,12 @@ export const initAdPage = (container) => {
                 </select>
             </div>
             <div class="form-group">
-                <label>스토어 URL <span style="color: red;">*</span></label>
-                <input type="text" id="ad-reg-store-url" placeholder="스토어 URL을 입력하세요" required>
+                <label>상품링크 <span style="color: red;">*</span></label>
+                <input type="text" id="ad-reg-store-url" placeholder="상품링크를 입력하세요" required>
             </div>
             <div class="form-group">
-                <label>쇼핑 URL <span style="color: red;">*</span></label>
-                <input type="text" id="ad-reg-shopping-url" placeholder="쇼핑 URL을 입력하세요" required>
+                <label>가격비교링크</label>
+                <input type="text" id="ad-reg-shopping-url" placeholder="가격비교링크를 입력하세요">
             </div>
             <div class="form-group">
                 <label>메인키워드</label>
@@ -295,6 +295,10 @@ export const initAdPage = (container) => {
             <div class="form-group">
                 <label>메인 키워드 <span style="color: red;">*</span></label>
                 <input type="text" id="ad-edit-keyword" placeholder="메인 키워드를 입력하세요" required>
+            </div>
+            <div class="form-group" id="ad-edit-product-name-group" style="display: none;">
+                <label>상품명</label>
+                <input type="text" id="ad-edit-product-name" placeholder="상품명을 입력하세요">
             </div>
             <div class="form-group">
                 <label>메모</label>
@@ -499,11 +503,7 @@ const initAdEvents = () => {
             
             // 유효성 검사
             if (!storeUrl) {
-                alert('스토어 URL을 입력해주세요.');
-                return;
-            }
-            if (!shoppingUrl) {
-                alert('쇼핑 URL을 입력해주세요.');
+                alert('상품링크를 입력해주세요.');
                 return;
             }
             if (!keyword) {
@@ -584,7 +584,7 @@ const initAdEvents = () => {
                     user_id: selectedUserId ? parseInt(selectedUserId, 10) : null,
                     username: selectedUsername,
                     store_url: storeUrl,
-                    shopping_url: shoppingUrl,
+                    shopping_url: shoppingUrl || null,
                     main_keyword: keyword,
                     work_days: workDays,
                     start_date: startDate,
@@ -1205,7 +1205,10 @@ const initAdEvents = () => {
             document.getElementById('ad-edit-product-url').value = '';
             document.getElementById('ad-edit-price-url').value = '';
             document.getElementById('ad-edit-keyword').value = '';
+            document.getElementById('ad-edit-product-name').value = '';
             document.getElementById('ad-edit-memo').value = '';
+            const productNameGroup = document.getElementById('ad-edit-product-name-group');
+            if (productNameGroup) productNameGroup.style.display = 'none';
             adEditSidebar.removeAttribute('data-edit-ad-id');
         });
     }

@@ -845,7 +845,7 @@ const initAdEvents = () => {
                 if (extendModal) extendModal.style.display = 'none';
                 return;
             }
-
+            
             // 연장일수 확인
             if (!extendDaysInput) {
                 alert('연장일수 입력 필드를 찾을 수 없습니다.');

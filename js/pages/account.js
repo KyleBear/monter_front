@@ -40,7 +40,7 @@ export const initAccountPage = (container) => {
         <div class="table-status-bar">
             <div class="selected-count"><span id="select-count">0</span>개 선택됨</div>
             <div class="table-actions">
-                <button class="btn-delete" id="delete-accounts-btn">삭제</button>
+                <button class="btn-delete" id="delete-accounts-btn" style="display: none;">삭제</button>
                 <button class="btn-register" id="open-register-btn">등록</button>
             </div>
         </div>
@@ -67,6 +67,18 @@ export const initAccountPage = (container) => {
             </table>
         </div>
     `;
+
+    // 권한에 따른 삭제 버튼 제어
+    const userRole = sessionStorage.getItem('userRole');
+    const deleteBtn = document.getElementById('delete-accounts-btn');
+    if (deleteBtn) {
+        // 관리자 권한일 때만 삭제 버튼 표시
+        if (userRole === 'admin') {
+            deleteBtn.style.display = 'inline-block';
+        } else {
+            deleteBtn.style.display = 'none';
+        }
+    }
 
     initAccountEvents();
 };

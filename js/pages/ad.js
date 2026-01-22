@@ -45,7 +45,7 @@ const renderAdTable = (ads) => {
 
     if (!ads || ads.length === 0) {
         console.log('광고 데이터가 없습니다.');
-        tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px;">등록된 광고가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px;">등록된 광고가 없습니다.</td></tr>';
         return;
     }
     
@@ -62,6 +62,7 @@ const renderAdTable = (ads) => {
     tbody.innerHTML = ads.map((ad, index) => {
         const status = statusMap[ad.status] || { text: ad.status, color: '#000' };
         
+        // slot 필드 표시 (백엔드에서 slot 필드로 응답)
         return `
             <tr data-ad-id="${ad.ad_id || ad.id}">
                 <td class="checkbox-col"><input type="checkbox" class="row-check"></td>
@@ -80,6 +81,7 @@ const renderAdTable = (ads) => {
                 <td>${ad.work_days || 0}</td>
                 <td>${ad.start_date || '-'}</td>
                 <td>${ad.end_date || '-'}</td>
+                <td>${ad.slot || '-'}</td>
                 <td><button class="btn-edit-row" data-ad-id="${ad.ad_id || ad.id}">수정</button></td>
             </tr>
         `;
@@ -138,6 +140,13 @@ const loadAdList = async (searchParams = {}) => {
             
             // 응답 형식: { success: true, data: { advertisements: [...] }, stats: {...} }
             const advertisements = data.data?.advertisements || [];
+            
+            // 첫 번째 광고 데이터 확인 (slot 필드 포함 여부)
+            if (advertisements.length > 0) {
+                console.log('첫 번째 광고 데이터:', advertisements[0]);
+                console.log('첫 번째 광고의 slot 값:', advertisements[0].slot);
+                console.log('첫 번째 광고의 모든 키:', Object.keys(advertisements[0]));
+            }
             
             renderAdTable(advertisements);
             updateAdStatus(data.stats || {});
@@ -218,7 +227,7 @@ export const initAdPage = (container) => {
                 <button class="btn-delete">삭제</button>
                 <button class="btn-extend" id="extend-btn">연장</button>
                 <button class="btn-register" id="open-register-btn">등록</button>
-                <button class="btn-register" id="csv-upload-btn" style="background-color: #28a745;">CSV 업로드</button>
+                <button class="btn-register" id="csv-upload-btn" style="background-color: #28a745; display: none;">CSV 업로드</button>
                 <button class="btn-register" id="csv-download-btn" style="background-color: #007bff; color: white;">CSV 다운로드</button>
             </div>
         </div>
@@ -239,6 +248,7 @@ export const initAdPage = (container) => {
                         <th>작업일수</th>
                         <th>시작일</th>
                         <th>종료일</th>
+                        <th>슬롯수</th>
                         <th>관리</th>
                     </tr>
                 </thead>
@@ -276,6 +286,10 @@ export const initAdPage = (container) => {
             <div class="form-group">
                 <label>종료일</label>
                 <input type="date" id="ad-reg-end-date" min="">
+            </div>
+            <div class="form-group">
+                <label>슬롯수</label>
+                <input type="number" id="ad-reg-slot" placeholder="슬롯수를 입력하세요" min="1" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
             </div>
             <div class="form-actions">
                 <button id="ad-reg-submit-btn" class="btn-submit">등록</button>
@@ -338,10 +352,12 @@ export const initAdPage = (container) => {
     const csvUploadBtn = document.getElementById('csv-upload-btn');
     const deleteBtn = document.querySelector('.btn-delete');
     
+    // CSV 업로드 버튼은 모든 권한에서 숨김
+    if (csvUploadBtn) csvUploadBtn.style.display = 'none';
+    
     if (userRole === 'advertiser') {
         // 광고주: 등록 버튼 숨기기
         if (openRegBtn) openRegBtn.style.display = 'none';
-        if (csvUploadBtn) csvUploadBtn.style.display = 'none';
         // 광고주: 삭제 버튼 숨기기
         if (deleteBtn) deleteBtn.style.display = 'none';
     }
@@ -460,6 +476,7 @@ const initAdEvents = () => {
             document.getElementById('ad-reg-store-url').value = '';
             document.getElementById('ad-reg-shopping-url').value = '';
             document.getElementById('ad-reg-keyword').value = '';
+            document.getElementById('ad-reg-slot').value = '';
             
             // 시작일: 오늘 기준 다음날부터 입력 가능
             const today = new Date();
@@ -505,6 +522,7 @@ const initAdEvents = () => {
             const keyword = document.getElementById('ad-reg-keyword').value.trim();
             const startDate = document.getElementById('ad-reg-start-date').value;
             const endDate = document.getElementById('ad-reg-end-date').value;
+            const slot = document.getElementById('ad-reg-slot').value.trim();
             
             // 유효성 검사
             if (!storeUrl) {
@@ -517,6 +535,10 @@ const initAdEvents = () => {
             }
             if (!startDate || !endDate) {
                 alert('시작일과 종료일을 입력해주세요.');
+                return;
+            }
+            if (!slot || parseInt(slot, 10) < 1) {
+                alert('슬롯수를 입력해주세요. (최소 1)');
                 return;
             }
             
@@ -593,7 +615,8 @@ const initAdEvents = () => {
                     main_keyword: keyword,
                     work_days: workDays,
                     start_date: startDate,
-                    end_date: endDate
+                    end_date: endDate,
+                    slot: parseInt(slot, 10)
                 };
                 
                 console.log('광고 등록 요청 데이터:', requestBody);
@@ -613,6 +636,9 @@ const initAdEvents = () => {
                     // 폼 초기화
                     // document.getElementById('ad-reg-userid').value = '';  // 아이디 필드 주석처리
                     document.getElementById('ad-reg-keyword').value = '';
+                    document.getElementById('ad-reg-store-url').value = '';
+                    document.getElementById('ad-reg-shopping-url').value = '';
+                    document.getElementById('ad-reg-slot').value = '';
                     
                     // 시작일: 오늘 기준 다음날부터 입력 가능
                     const today = new Date();

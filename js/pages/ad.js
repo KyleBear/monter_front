@@ -579,43 +579,30 @@ const initAdEvents = () => {
             adRegSubmitBtn.textContent = '등록 중...';
             
             try {
-                // 기존 사용자 정보 처리 (주석처리)
-                // const userRole = sessionStorage.getItem('userRole');
-                // const currentUsername = sessionStorage.getItem('userName');
-                // const currentUserId = sessionStorage.getItem('userId');
+                const userRole = sessionStorage.getItem('userRole');
+                const currentUserId = sessionStorage.getItem('userId');
                 
-                // if (!currentUsername) {
-                //     alert('로그인 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
-                //     isSubmittingAd = false;
-                //     adRegSubmitBtn.disabled = false;
-                //     adRegSubmitBtn.textContent = '등록';
-                //     return;
-                // }
+                // 대행사인 경우 선택한 사용자의 user_id 가져오기
+                let selectedUserId = currentUserId; // 기본값은 현재 사용자 ID
                 
-                // 대행사인 경우 사용자 선택 필수 검증 (주석처리)
-                // let selectedUserId = currentUserId;
-                // let selectedUsername = currentUsername;
+                if (userRole === 'agency') {
+                    const userSelect = document.getElementById('ad-reg-user-select');
+                    if (userSelect && userSelect.value) {
+                        // 선택한 사용자의 user_id 추출
+                        const [userId] = userSelect.value.split('|');
+                        selectedUserId = userId;
+                    } else {
+                        // 사용자가 선택하지 않았을 경우 현재 사용자 ID 사용
+                        selectedUserId = currentUserId;
+                    }
+                }
                 
-                // if (userRole === 'agency') {
-                //     const userSelect = document.getElementById('ad-reg-user-select');
-                //     if (!userSelect || !userSelect.value) {
-                //         alert('사용자를 선택해주세요.');
-                //         isSubmittingAd = false;
-                //         adRegSubmitBtn.disabled = false;
-                //         adRegSubmitBtn.textContent = '등록';
-                //         return;
-                //     }
-                    
-                //     const [userId, username] = userSelect.value.split('|');
-                //     selectedUserId = userId;
-                //     selectedUsername = username;
-                // }
-                
-                // 광고 등록 요청 (시작일, 종료일, 슬롯수만 전송)
+                // 광고 등록 요청 (시작일, 종료일, 슬롯수, user_id 전송)
                 const requestBody = {
                     start_date: startDate,
                     end_date: endDate,
-                    slot: slot  // 문자열로 전송 (백엔드가 문자열을 기대함)
+                    slot: slot,  // 문자열로 전송 (백엔드가 문자열을 기대함)
+                    user_id: selectedUserId ? parseInt(selectedUserId, 10) : null
                 };
                 
                 // 기존 requestBody (주석처리)

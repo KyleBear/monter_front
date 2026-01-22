@@ -268,8 +268,8 @@ export const initAdPage = (container) => {
                 </select>
             </div>
             <div class="form-group">
-                <label>상품링크 <span style="color: red;">*</span></label>
-                <input type="text" id="ad-reg-store-url" placeholder="상품링크를 입력하세요" required>
+                <label>상품링크</label>
+                <input type="text" id="ad-reg-store-url" placeholder="상품링크를 입력하세요">
             </div>
             <div class="form-group">
                 <label>가격비교링크</label>
@@ -517,22 +517,26 @@ const initAdEvents = () => {
                 return;
             }
             
-            const storeUrl = document.getElementById('ad-reg-store-url').value.trim();
-            const shoppingUrl = document.getElementById('ad-reg-shopping-url').value.trim();
-            const keyword = document.getElementById('ad-reg-keyword').value.trim();
+            // 기존 필드 (주석처리)
+            // const storeUrl = document.getElementById('ad-reg-store-url').value.trim();
+            // const shoppingUrl = document.getElementById('ad-reg-shopping-url').value.trim();
+            // const keyword = document.getElementById('ad-reg-keyword').value.trim();
+            
             const startDate = document.getElementById('ad-reg-start-date').value;
             const endDate = document.getElementById('ad-reg-end-date').value;
             const slot = document.getElementById('ad-reg-slot').value.trim();
             
             // 유효성 검사
-            if (!storeUrl) {
-                alert('상품링크를 입력해주세요.');
-                return;
-            }
-            if (!keyword) {
-                alert('메인키워드를 입력해주세요.');
-                return;
-            }
+            // 기존 유효성 검사 (주석처리)
+            // if (!storeUrl) {
+            //     alert('상품링크를 입력해주세요.');
+            //     return;
+            // }
+            // if (!keyword) {
+            //     alert('메인키워드를 입력해주세요.');
+            //     return;
+            // }
+            
             if (!startDate || !endDate) {
                 alert('시작일과 종료일을 입력해주세요.');
                 return;
@@ -566,8 +570,8 @@ const initAdEvents = () => {
                 return;
             }
             
-            // 작업일수 자동 계산 (시작일과 종료일의 차이)
-            const workDays = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
+            // 작업일수 자동 계산 (시작일과 종료일의 차이) - 주석처리
+            // const workDays = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
             
             // 처리 중 플래그 설정 및 버튼 비활성화
             isSubmittingAd = true;
@@ -575,49 +579,57 @@ const initAdEvents = () => {
             adRegSubmitBtn.textContent = '등록 중...';
             
             try {
-                const userRole = sessionStorage.getItem('userRole');
-                const currentUsername = sessionStorage.getItem('userName');
-                const currentUserId = sessionStorage.getItem('userId');
+                // 기존 사용자 정보 처리 (주석처리)
+                // const userRole = sessionStorage.getItem('userRole');
+                // const currentUsername = sessionStorage.getItem('userName');
+                // const currentUserId = sessionStorage.getItem('userId');
                 
-                if (!currentUsername) {
-                    alert('로그인 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
-                    isSubmittingAd = false;
-                    adRegSubmitBtn.disabled = false;
-                    adRegSubmitBtn.textContent = '등록';
-                    return;
-                }
+                // if (!currentUsername) {
+                //     alert('로그인 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+                //     isSubmittingAd = false;
+                //     adRegSubmitBtn.disabled = false;
+                //     adRegSubmitBtn.textContent = '등록';
+                //     return;
+                // }
                 
-                // 대행사인 경우 사용자 선택 필수 검증
-                let selectedUserId = currentUserId;
-                let selectedUsername = currentUsername;
+                // 대행사인 경우 사용자 선택 필수 검증 (주석처리)
+                // let selectedUserId = currentUserId;
+                // let selectedUsername = currentUsername;
                 
-                if (userRole === 'agency') {
-                    const userSelect = document.getElementById('ad-reg-user-select');
-                    if (!userSelect || !userSelect.value) {
-                        alert('사용자를 선택해주세요.');
-                        isSubmittingAd = false;
-                        adRegSubmitBtn.disabled = false;
-                        adRegSubmitBtn.textContent = '등록';
-                        return;
-                    }
+                // if (userRole === 'agency') {
+                //     const userSelect = document.getElementById('ad-reg-user-select');
+                //     if (!userSelect || !userSelect.value) {
+                //         alert('사용자를 선택해주세요.');
+                //         isSubmittingAd = false;
+                //         adRegSubmitBtn.disabled = false;
+                //         adRegSubmitBtn.textContent = '등록';
+                //         return;
+                //     }
                     
-                    const [userId, username] = userSelect.value.split('|');
-                    selectedUserId = userId;
-                    selectedUsername = username;
-                }
+                //     const [userId, username] = userSelect.value.split('|');
+                //     selectedUserId = userId;
+                //     selectedUsername = username;
+                // }
                 
-                // 광고 등록 요청
+                // 광고 등록 요청 (시작일, 종료일, 슬롯수만 전송)
                 const requestBody = {
-                    user_id: selectedUserId ? parseInt(selectedUserId, 10) : null,
-                    username: selectedUsername,
-                    store_url: storeUrl,
-                    shopping_url: shoppingUrl || null,
-                    main_keyword: keyword,
-                    work_days: workDays,
                     start_date: startDate,
                     end_date: endDate,
-                    slot: parseInt(slot, 10)
+                    slot: slot  // 문자열로 전송 (백엔드가 문자열을 기대함)
                 };
+                
+                // 기존 requestBody (주석처리)
+                // const requestBody = {
+                //     user_id: selectedUserId ? parseInt(selectedUserId, 10) : null,
+                //     username: selectedUsername,
+                //     store_url: storeUrl,
+                //     shopping_url: shoppingUrl || null,
+                //     main_keyword: keyword,
+                //     work_days: workDays,
+                //     start_date: startDate,
+                //     end_date: endDate,
+                //     slot: parseInt(slot, 10)
+                // };
                 
                 console.log('광고 등록 요청 데이터:', requestBody);
                 

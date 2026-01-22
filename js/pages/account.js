@@ -563,36 +563,62 @@ const initAccountEvents = () => {
             
             try {
                 console.log('삭제 요청 account_ids:', accountIds);
+                console.log('삭제 요청 URL:', `${API_BASE_URL}/accounts`);
+                
+                const requestBody = {
+                    account_ids: accountIds
+                };
+                console.log('삭제 요청 본문:', JSON.stringify(requestBody));
+                console.log('삭제 요청 헤더:', getAuthHeaders());
                 
                 // 여러 계정 삭제 (정수 배열로 전송)
                 const response = await fetch(`${API_BASE_URL}/accounts`, {
                     method: 'DELETE',
                     headers: getAuthHeaders(),
-                    body: JSON.stringify({
-                        account_ids: accountIds
-                    })
+                    body: JSON.stringify(requestBody)
                 });
                 
                 console.log('삭제 응답 상태:', response.status);
+                console.log('삭제 응답 상태 텍스트:', response.statusText);
+                
+                // 응답 본문을 먼저 텍스트로 읽기
+                const responseText = await response.text();
+                console.log('삭제 응답 본문 (원본):', responseText);
                 
                 if (response.ok) {
-                    const data = await response.json();
-                    console.log('삭제 성공:', data);
-                    alert('선택한 계정이 삭제되었습니다.');
+                    let data;
+                    try {
+                        data = JSON.parse(responseText);
+                        console.log('삭제 성공 데이터:', data);
+                        console.log('삭제된 개수:', data.deleted_count);
+                    } catch (e) {
+                        console.error('응답 파싱 실패:', e);
+                        console.error('응답 텍스트:', responseText);
+                        data = { message: responseText };
+                    }
+                    
+                    alert(`선택한 계정이 삭제되었습니다. (삭제된 개수: ${data.deleted_count || accountIds.length})`);
+                    
+                    // 검색 조건 초기화
+                    if (searchInput) {
+                        searchInput.value = '';
+                    }
+                    if (searchSelect) {
+                        searchSelect.value = 'all';
+                    }
+                    currentSearchParams = {};
+                    
                     // 계정 목록 새로고침 (검색 조건 없이 전체 목록)
-                    await loadAccountList();
+                    await loadAccountList({});
                 } else {
                     // 더 자세한 에러 정보 출력
                     let errorData = {};
-                    let errorText = '';
                     try {
-                        errorText = await response.text();
-                        console.error('삭제 실패 - 응답 텍스트:', errorText);
-                        if (errorText) {
+                        if (responseText) {
                             try {
-                                errorData = JSON.parse(errorText);
+                                errorData = JSON.parse(responseText);
                             } catch (parseError) {
-                                errorData = { message: errorText };
+                                errorData = { message: responseText };
                             }
                         }
                     } catch (e) {
@@ -602,7 +628,8 @@ const initAccountEvents = () => {
                     console.error('삭제 실패 상세:', {
                         status: response.status,
                         statusText: response.statusText,
-                        errorData: errorData
+                        errorData: errorData,
+                        responseText: responseText
                     });
                     
                     // 에러 메시지 추출
@@ -624,7 +651,7 @@ const initAccountEvents = () => {
                         errorMessage = errorData.message;
                     }
                     
-                    alert(`삭제 실패: ${errorMessage}`);
+                    alert(`삭제 실패 (${response.status}): ${errorMessage}`);
                 }
             } catch (error) {
                 console.error('삭제 API 호출 오류:', error);

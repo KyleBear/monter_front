@@ -54,7 +54,7 @@ export const initAccountPage = (container) => {
                         <th>아이디</th>
                         <th>비밀번호</th>
                         <th>권한</th>
-                        <th>소속</th>
+                        <th style="display: none;">소속</th>
                         <th>수량</th>
                         <th>광고</th>
                         <th>메모</th>
@@ -234,7 +234,7 @@ const renderAccountTable = (accounts) => {
                 <td>${account.username || account.userid || '-'}</td>
                 <td>****</td>
                 <td>${roleMap[account.role] || account.role || '-'}</td>
-                <td>${account.affiliation || '-'}</td>
+                <td style="display: none;">${account.affiliation || '-'}</td>
                 <td>${account.ad_count || 0}</td>
                 <td>${account.active_ad_count > 0 ? '진행중' : '-'}</td>
                 <td>${account.memo || '-'}</td>
@@ -357,9 +357,8 @@ const initAccountEvents = () => {
                         { value: 'advertiser', label: '광고주' }
                     ];
                 } else if (currentUserRole === 'total') {
-                    // 총판사: 총판사, 대행사, 광고주
+                    // 총판사: 대행사, 광고주만 등록 가능 (총판사는 등록 불가)
                     allowedRoles = [
-                        { value: 'total', label: '총판사' },
                         { value: 'agency', label: '대행사' },
                         { value: 'advertiser', label: '광고주' }
                     ];
@@ -395,13 +394,6 @@ const initAccountEvents = () => {
                 }
             }
             
-            // 현재 사용자의 소속을 기본값으로 설정
-            const currentUserAffiliation = sessionStorage.getItem('userAffiliation');
-            const affiliationInput = document.getElementById('reg-affiliation');
-            if (affiliationInput) {
-                affiliationInput.value = currentUserAffiliation || '';
-            }
-            
             // 폼 초기화
             document.getElementById('reg-userid').value = '';
             document.getElementById('reg-password').value = '';
@@ -428,7 +420,10 @@ const initAccountEvents = () => {
     let isSubmittingAccount = false; // 처리 중 플래그
     
     if (regSubmitBtn) {
-        regSubmitBtn.addEventListener('click', async (e) => {
+        regSubmitBtn.onclick = null;
+
+        // regSubmitBtn.addEventListener('click', async (e) => {
+        regSubmitBtn.onclick = async (e) => {
             e.preventDefault();
             e.stopPropagation(); // 이벤트 버블링 방지
             
@@ -441,8 +436,10 @@ const initAccountEvents = () => {
             const userid = document.getElementById('reg-userid').value.trim();
             const password = document.getElementById('reg-password').value;
             const role = document.getElementById('reg-role').value;
-            const affiliation = document.getElementById('reg-affiliation').value.trim();
             const memo = document.getElementById('reg-memo').value.trim();
+            
+            // 소속은 아이디로 자동 설정
+            const affiliation = userid;
             
             // 유효성 검사
             if (!userid) {
@@ -455,10 +452,6 @@ const initAccountEvents = () => {
             }
             if (password.length < 4) {
                 alert('비밀번호는 4자 이상 입력해주세요.');
-                return;
-            }
-            if (!affiliation) {
-                alert('소속을 입력해주세요.');
                 return;
             }
             
@@ -492,9 +485,6 @@ const initAccountEvents = () => {
                     if (roleSelect && roleSelect.options.length > 0) {
                         roleSelect.value = roleSelect.options[0].value;
                     }
-                    // 소속은 현재 사용자의 소속으로 초기화
-                    const currentUserAffiliation = sessionStorage.getItem('userAffiliation');
-                    document.getElementById('reg-affiliation').value = currentUserAffiliation || '';
                     document.getElementById('reg-memo').value = '';
                     
                     rightSidebar.classList.remove('active');
@@ -523,7 +513,7 @@ const initAccountEvents = () => {
                 regSubmitBtn.disabled = false;
                 regSubmitBtn.textContent = '등록';
             }
-        });
+        };
     }
 
     // 검색 기능
@@ -680,7 +670,7 @@ const initAccountEvents = () => {
             document.getElementById('edit-userid').value = accountData.username || '';
             document.getElementById('edit-password').value = ''; // 비밀번호는 비워둠
             document.getElementById('edit-role').value = accountData.role || '';
-            document.getElementById('edit-affiliation').value = accountData.affiliation || '';
+            // 소속은 아이디로 자동 설정되므로 입력 필드에 값을 설정하지 않음
             document.getElementById('edit-memo').value = accountData.memo || '';
             
             // 등록 사이드바가 열려있으면 닫기
@@ -723,8 +713,11 @@ const initAccountEvents = () => {
             const userId = document.getElementById('edit-user-id').value;
             const password = document.getElementById('edit-password').value;
             // 권한은 수정 불가 (disabled 필드이므로 요청에 포함하지 않음)
-            const affiliation = document.getElementById('edit-affiliation').value.trim();
+            const userid = document.getElementById('edit-userid').value.trim();
             const memo = document.getElementById('edit-memo').value.trim();
+            
+            // 소속은 아이디로 자동 설정
+            const affiliation = userid;
             
             // 유효성 검사
             if (!userId) {
@@ -733,10 +726,6 @@ const initAccountEvents = () => {
             }
             if (password && password.length < 4) {
                 alert('비밀번호는 4자 이상 입력해주세요.');
-                return;
-            }
-            if (!affiliation) {
-                alert('소속을 입력해주세요.');
                 return;
             }
             
@@ -777,7 +766,6 @@ const initAccountEvents = () => {
                     document.getElementById('edit-userid').value = '';
                     document.getElementById('edit-password').value = '';
                     document.getElementById('edit-role').value = '';
-                    document.getElementById('edit-affiliation').value = '';
                     document.getElementById('edit-memo').value = '';
                     
                     // 수정 사이드바 닫기

@@ -45,7 +45,7 @@ const renderAdTable = (ads) => {
 
     if (!ads || ads.length === 0) {
         console.log('광고 데이터가 없습니다.');
-        tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px;">등록된 광고가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px;">등록된 광고가 없습니다.</td></tr>';
         return;
     }
     
@@ -76,9 +76,9 @@ const renderAdTable = (ads) => {
                         : ad.product_name || '-'
                 }</td>
                 <td>${ad.rank || '-'}</td>
-                <td>${ad.rank_1day_ago || '-'}</td>
-                <td>${ad.rank_2days_ago || '-'}</td>
-                <td>${ad.rank_7days_ago || '-'}</td>
+                <td style="display: none;">${ad.rank_1day_ago || '-'}</td>
+                <td style="display: none;">${ad.rank_2days_ago || '-'}</td>
+                <td style="display: none;">${ad.rank_7days_ago || '-'}</td>
                 <td>${ad.product_mid || '-'}</td>
                 <td>${ad.price_comparison_mid || '-'}</td>
                 <td>${ad.work_days || 0}</td>
@@ -245,8 +245,17 @@ const loadAdList = async (searchParams = {}) => {
             console.log('광고 목록 API 응답:', data);
             console.log('광고 개수:', data.data?.advertisements?.length || 0);
             
-            // 응답 형식: { success: true, data: { advertisements: [...] }, stats: {...} }
-            const advertisements = data.data?.advertisements || [];
+            // 다양한 응답 형식 지원
+            let advertisements = [];
+            if (data.data && data.data.advertisements && Array.isArray(data.data.advertisements)) {
+                advertisements = data.data.advertisements;
+            } else if (data.advertisements && Array.isArray(data.advertisements)) {
+                advertisements = data.advertisements;
+            } else if (Array.isArray(data)) {
+                advertisements = data;
+            }
+            
+            console.log('테이블에 표시될 광고 개수:', advertisements.length);
             
             // 첫 번째 광고 데이터 확인 (slot 필드 포함 여부)
             if (advertisements.length > 0) {
@@ -256,7 +265,19 @@ const loadAdList = async (searchParams = {}) => {
             }
             
             renderAdTable(advertisements);
-            updateAdStatus(data.stats || {});
+            
+            // 통계 업데이트: 테이블에 표시되는 데이터 기반으로 계산 (검색 필터 반영)
+            const stats = {
+                total: advertisements.length,
+                normal: advertisements.filter(ad => ad.status === 'normal').length,
+                error: advertisements.filter(ad => ad.status === 'error').length,
+                pending: advertisements.filter(ad => ad.status === 'pending').length,
+                ending: advertisements.filter(ad => ad.status === 'ending').length,
+                ended: advertisements.filter(ad => ad.status === 'ended').length
+            };
+            
+            console.log('테이블 데이터 기반 통계:', stats);
+            updateAdStatus(stats);
         } else {
             let errorData = {};
             try {
@@ -350,9 +371,9 @@ export const initAdPage = (container) => {
                         <th>메인키워드</th>
                         <th>상품명</th>
                         <th>순위</th>
-                        <th>1일전</th>
-                        <th>2일전</th>
-                        <th>7일전</th>
+                        <th style="display: none;">1일전</th>
+                        <th style="display: none;">2일전</th>
+                        <th style="display: none;">7일전</th>
                         <th>상품MID</th>
                         <th>가격비교MID</th>
                         <th>작업일수</th>

@@ -218,11 +218,52 @@ const updateSettlementStats = (stats) => {
 // 정산 로그 목록 로드
 const loadSettlementList = async (params = {}) => {
     try {
-        const queryString = new URLSearchParams(params).toString();
-        // 백엔드 엔드포인트: /settlements
-        const url = `${API_BASE_URL}/settlements${queryString ? '?' + queryString : ''}`;
+        // 날짜 필터링이 있는 경우 /by-date 엔드포인트 사용
+        const hasDateFilter = params.start_date && params.end_date;
         
-        console.log('정산 로그 API 호출:', url); // 디버깅용
+        let endpoint = '/settlements';
+        let queryParams = {};
+        
+        if (hasDateFilter) {
+            // 날짜 필터링이 있으면 /by-date 엔드포인트 사용
+            endpoint = '/settlements/by-date';
+            
+            // /by-date 엔드포인트 파라미터
+            queryParams.start_date = params.start_date;
+            queryParams.end_date = params.end_date;
+            
+            if (params.keyword || params.search_keyword) {
+                queryParams.search_keyword = params.keyword || params.search_keyword;
+            }
+            
+            if (params.settlement_type) {
+                queryParams.settlement_type = params.settlement_type;
+            }
+        } else {
+            // 기본 엔드포인트 파라미터 (datetime 기반)
+            if (params.start_date) {
+                // date를 datetime으로 변환 (하루의 시작: 00:00:00)
+                queryParams.start_datetime = `${params.start_date}T00:00:00`;
+            }
+            if (params.end_date) {
+                // date를 datetime으로 변환 (하루의 끝: 23:59:59)
+                queryParams.end_datetime = `${params.end_date}T23:59:59`;
+            }
+            
+            if (params.page) {
+                queryParams.page = params.page;
+            }
+            if (params.per_page || params.limit) {
+                queryParams.limit = params.per_page || params.limit;
+            }
+        }
+        
+        const queryString = new URLSearchParams(queryParams).toString();
+        const url = `${API_BASE_URL}${endpoint}${queryString ? '?' + queryString : ''}`;
+        
+        console.log('정산 로그 API 호출:', url);
+        console.log('사용된 엔드포인트:', endpoint);
+        console.log('요청 파라미터:', queryParams);
         
         const response = await fetch(url, {
             method: 'GET',
@@ -231,15 +272,44 @@ const loadSettlementList = async (params = {}) => {
 
         if (response.ok) {
             const data = await response.json();
-            console.log('정산 로그 API 응답:', data);
-            console.log('정산 로그 개수:', data.data?.settlements?.length || 0);
+            console.log('정산 로그 API 응답 (전체):', data);
+            console.log('응답 데이터 키:', Object.keys(data));
             
-            // 응답 형식: { success: true, data: { settlements: [...] }, stats: {...} }
-            const settlements = data.data?.settlements || [];
+            // 다양한 응답 형식 지원
+            let settlements = [];
+            if (data.data && data.data.settlements && Array.isArray(data.data.settlements)) {
+                settlements = data.data.settlements;
+                console.log('응답 형식: data.data.settlements');
+            } else if (data.settlements && Array.isArray(data.settlements)) {
+                settlements = data.settlements;
+                console.log('응답 형식: data.settlements');
+            } else if (Array.isArray(data)) {
+                settlements = data;
+                console.log('응답 형식: 배열 직접');
+            } else {
+                console.warn('예상하지 못한 응답 형식:', data);
+                settlements = [];
+            }
+            
+            console.log('최종 정산 로그 개수:', settlements.length);
+            if (settlements.length > 0) {
+                console.log('첫 번째 정산 로그 예시:', settlements[0]);
+            }
             
             renderSettlementTable(settlements);
-            updateSettlementStats(data.stats || {});
-            return data;
+            
+            // 통계 업데이트 (다양한 형식 지원)
+            const stats = data.stats || data.data?.stats || {};
+            updateSettlementStats(stats);
+            
+            // total 필드도 다양한 형식 지원
+            const total = data.total || data.data?.total || data.count || settlements.length;
+            
+            return {
+                settlements: settlements,
+                stats: stats,
+                total: total
+            };
         } else {
             // 더 자세한 에러 정보 출력
             let errorData = {};
@@ -331,19 +401,29 @@ const initSettlementEvents = () => {
         
         const params = {
             start_date: startDate,
-            end_date: endDate,
-            page: currentPage,
-            per_page: itemsPerPage
+            end_date: endDate
         };
         
+        // 검색어가 있으면 추가 (by-date 엔드포인트는 search_keyword 사용)
         if (searchKeyword) {
-            params.keyword = searchKeyword;
+            params.search_keyword = searchKeyword;
         }
+        
+        console.log('loadSettlementData 호출');
+        console.log('시작일:', startDate);
+        console.log('종료일:', endDate);
+        console.log('검색어:', searchKeyword);
         
         const data = await loadSettlementList(params);
         
+        console.log('API 응답 데이터:', data);
+        console.log('조회된 정산 로그 개수:', data.settlements?.length || 0);
+        console.log('total 값:', data.total);
+        
         // 페이지네이션 계산
-        totalPages = Math.ceil((data.total || 0) / itemsPerPage);
+        // /by-date 엔드포인트가 total을 반환하지 않을 수 있으므로
+        // settlements.length를 사용하거나 백엔드 응답 확인 필요
+        totalPages = Math.ceil((data.total || data.settlements?.length || 0) / itemsPerPage);
         if (totalPages === 0) totalPages = 1;
         updatePagination();
     };

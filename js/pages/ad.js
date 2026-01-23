@@ -72,10 +72,13 @@ const renderAdTable = (ads) => {
                 <td>${ad.main_keyword || '-'}</td>
                 <td>${
                     ad.product_name && ad.store_url 
-                        ? `<a href="${ad.store_url}" target="_blank" style="color: #007bff; text-decoration: underline; cursor: pointer;">${ad.product_name}</a>`
+                        ? `<a href="${ad.store_url}" target="_blank" style="color: #007bff; text-decoration: underline; cursor: pointer;">${ad.product_name}</a> <button class="rank-history-btn" data-ad-id="${ad.ad_id || ad.id}" data-product-name="${ad.product_name || ''}" style="margin-left: 5px; padding: 2px 6px; font-size: 11px; background-color: #17a2b8; color: white; border: none; border-radius: 3px; cursor: pointer;">순위</button>`
                         : ad.product_name || '-'
                 }</td>
                 <td>${ad.rank || '-'}</td>
+                <td>${ad.rank_1day_ago || '-'}</td>
+                <td>${ad.rank_2days_ago || '-'}</td>
+                <td>${ad.rank_7days_ago || '-'}</td>
                 <td>${ad.product_mid || '-'}</td>
                 <td>${ad.price_comparison_mid || '-'}</td>
                 <td>${ad.work_days || 0}</td>
@@ -89,6 +92,110 @@ const renderAdTable = (ads) => {
 
     // 체크박스 이벤트 다시 바인딩
     bindRowChecks();
+    
+    // 순위 변동 버튼 이벤트 바인딩
+    bindRankHistoryButtons();
+};
+
+// 순위 변동 버튼 이벤트 바인딩
+const bindRankHistoryButtons = () => {
+    const rankHistoryBtns = document.querySelectorAll('.rank-history-btn');
+    rankHistoryBtns.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const adId = btn.getAttribute('data-ad-id');
+            const productName = btn.getAttribute('data-product-name');
+            if (adId) {
+                await showRankHistoryModal(adId, productName);
+            }
+        });
+    });
+};
+
+// 순위 변동 내역 로드
+const loadRankHistory = async (adId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/advertisements/${adId}/rank-history`, {
+            method: 'GET',
+            headers: getAuthHeaders(),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log('순위 변동 내역 API 응답 (전체):', data);
+            console.log('순위 변동 내역 데이터:', data.data?.ranks || data.ranks);
+            
+            // 응답 형식: { success: true, data: { ranks: [...] } }
+            let ranks = data.data?.ranks || data.ranks || [];
+            
+            // 날짜 기준 내림차순 정렬 (최신순)
+            if (ranks.length > 0) {
+                ranks = ranks.sort((a, b) => {
+                    const dateA = new Date(a.rank_date || 0);
+                    const dateB = new Date(b.rank_date || 0);
+                    return dateB - dateA; // 최신순
+                });
+                console.log('정렬된 순위 변동 내역:', ranks);
+                console.log('순위 변동 내역 개수:', ranks.length);
+            }
+            
+            return ranks;
+        } else {
+            const errorText = await response.text();
+            console.error('순위 변동 내역 로드 실패:', response.status, errorText);
+            return [];
+        }
+    } catch (error) {
+        console.error('순위 변동 내역 API 호출 오류:', error);
+        return [];
+    }
+};
+
+// 순위 변동 모달 표시
+const showRankHistoryModal = async (adId, productName) => {
+    const modal = document.getElementById('rank-history-modal');
+    const content = document.getElementById('rank-history-content');
+    
+    if (!modal || !content) {
+        console.error('순위 변동 모달 요소를 찾을 수 없습니다.');
+        return;
+    }
+    
+    modal.style.display = 'block';
+    content.innerHTML = '<p>로딩 중...</p>';
+    
+    const ranks = await loadRankHistory(adId);
+    
+    if (ranks.length === 0) {
+        content.innerHTML = '<p>순위 변동 내역이 없습니다.</p>';
+        return;
+    }
+    
+    // 순위 변동 테이블 생성
+    const tableHTML = `
+        <div style="margin-bottom: 10px;">
+            <strong>상품명: ${productName}</strong>
+        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background-color: #f5f5f5;">
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">날짜</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">순위</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${ranks.map(rank => `
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${rank.rank_date || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${rank.rank || '-'}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    
+    content.innerHTML = tableHTML;
 };
 
 // 소속 사용자 목록 로드
@@ -243,6 +350,9 @@ export const initAdPage = (container) => {
                         <th>메인키워드</th>
                         <th>상품명</th>
                         <th>순위</th>
+                        <th>1일전</th>
+                        <th>2일전</th>
+                        <th>7일전</th>
                         <th>상품MID</th>
                         <th>가격비교MID</th>
                         <th>작업일수</th>
@@ -340,6 +450,19 @@ export const initAdPage = (container) => {
                 <div style="margin-top: 20px; text-align: right;">
                     <button id="extend-confirm-btn" class="btn-submit" style="margin-right: 10px;">확인</button>
                     <button id="extend-cancel-btn" class="btn-close">취소</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 순위 변동 모달 -->
+        <div id="rank-history-modal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 800px; margin: 5% auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0;">순위 변동 내역</h3>
+                    <button id="rank-history-close-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
+                </div>
+                <div id="rank-history-content">
+                    <p>로딩 중...</p>
                 </div>
             </div>
         </div>
@@ -517,26 +640,16 @@ const initAdEvents = () => {
                 return;
             }
             
-            // 기존 필드 (주석처리)
-            // const storeUrl = document.getElementById('ad-reg-store-url').value.trim();
-            // const shoppingUrl = document.getElementById('ad-reg-shopping-url').value.trim();
-            // const keyword = document.getElementById('ad-reg-keyword').value.trim();
+            // 필드 읽기
+            const storeUrl = document.getElementById('ad-reg-store-url').value.trim();
+            const shoppingUrl = document.getElementById('ad-reg-shopping-url').value.trim();
+            const keyword = document.getElementById('ad-reg-keyword').value.trim();
             
             const startDate = document.getElementById('ad-reg-start-date').value;
             const endDate = document.getElementById('ad-reg-end-date').value;
             const slot = document.getElementById('ad-reg-slot').value.trim();
             
-            // 유효성 검사
-            // 기존 유효성 검사 (주석처리)
-            // if (!storeUrl) {
-            //     alert('상품링크를 입력해주세요.');
-            //     return;
-            // }
-            // if (!keyword) {
-            //     alert('메인키워드를 입력해주세요.');
-            //     return;
-            // }
-            
+            // 유효성 검사 (storeUrl, keyword 필수 검사 제거)
             if (!startDate || !endDate) {
                 alert('시작일과 종료일을 입력해주세요.');
                 return;
@@ -597,7 +710,7 @@ const initAdEvents = () => {
                     }
                 }
                 
-                // 광고 등록 요청 (시작일, 종료일, 슬롯수, user_id 전송)
+                // 광고 등록 요청 (값이 있는 필드만 포함)
                 const requestBody = {
                     start_date: startDate,
                     end_date: endDate,
@@ -605,18 +718,16 @@ const initAdEvents = () => {
                     user_id: selectedUserId ? parseInt(selectedUserId, 10) : null
                 };
                 
-                // 기존 requestBody (주석처리)
-                // const requestBody = {
-                //     user_id: selectedUserId ? parseInt(selectedUserId, 10) : null,
-                //     username: selectedUsername,
-                //     store_url: storeUrl,
-                //     shopping_url: shoppingUrl || null,
-                //     main_keyword: keyword,
-                //     work_days: workDays,
-                //     start_date: startDate,
-                //     end_date: endDate,
-                //     slot: parseInt(slot, 10)
-                // };
+                // 값이 있는 경우에만 추가
+                if (storeUrl) {
+                    requestBody.store_url = storeUrl;
+                }
+                if (shoppingUrl) {
+                    requestBody.shopping_url = shoppingUrl;
+                }
+                if (keyword) {
+                    requestBody.main_keyword = keyword;
+                }
                 
                 console.log('광고 등록 요청 데이터:', requestBody);
                 
@@ -1240,6 +1351,27 @@ const initAdEvents = () => {
             const productNameGroup = document.getElementById('ad-edit-product-name-group');
             if (productNameGroup) productNameGroup.style.display = 'none';
             adEditSidebar.removeAttribute('data-edit-ad-id');
+        });
+    }
+    
+    // 순위 변동 모달 닫기
+    const rankHistoryCloseBtn = document.getElementById('rank-history-close-btn');
+    if (rankHistoryCloseBtn) {
+        rankHistoryCloseBtn.addEventListener('click', () => {
+            const modal = document.getElementById('rank-history-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
+    
+    // 모달 외부 클릭 시 닫기
+    const rankHistoryModal = document.getElementById('rank-history-modal');
+    if (rankHistoryModal) {
+        rankHistoryModal.addEventListener('click', (e) => {
+            if (e.target === rankHistoryModal) {
+                rankHistoryModal.style.display = 'none';
+            }
         });
     }
 

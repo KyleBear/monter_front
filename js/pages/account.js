@@ -223,6 +223,10 @@ const renderAccountTable = (accounts) => {
     console.log('✅ 계정 테이블 렌더링 시작, 계정 수:', accounts.length);
     console.log('첫 번째 계정 데이터 예시:', accounts[0]);
 
+    // 현재 사용자 권한 확인
+    const userRole = sessionStorage.getItem('userRole');
+    const isAdmin = userRole === 'admin';
+
     tbody.innerHTML = accounts.map((account, index) => {
         const roleMap = {
             'total': '총판사',
@@ -239,12 +243,15 @@ const renderAccountTable = (accounts) => {
             memo: account.memo || ''
         });
         
+        // 관리자 권한일 때는 실제 비밀번호 표시, 그 외에는 **** 표시
+        const passwordDisplay = isAdmin ? (account.password || '-') : '****';
+        
         return `
             <tr data-account-id="${account.user_id || account.id}" data-account-data='${accountDataJson}'>
                 <td class="checkbox-col"><input type="checkbox" class="row-check"></td>
                 <td>${index + 1}</td>
                 <td>${account.username || account.userid || '-'}</td>
-                <td>****</td>
+                <td>${passwordDisplay}</td>
                 <td>${roleMap[account.role] || account.role || '-'}</td>
                 <td style="display: none;">${account.affiliation || '-'}</td>
                 <td>${account.ad_count || 0}</td>

@@ -679,3 +679,220 @@ th {
 .modal-content .form-actions button {
     margin-left: 10px;
 }
+
+/* 반응형 디자인 - 태블릿 및 모바일 */
+@media (max-width: 1024px) {
+    .content {
+        padding: 20px;
+    }
+    
+    .account-status {
+        flex-wrap: wrap;
+    }
+    
+    .status-card {
+        min-width: calc(50% - 10px);
+    }
+    
+    .date-filter-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .pagination-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .pagination-right {
+        flex-direction: column;
+        width: 100%;
+    }
+}
+
+/* 모바일 화면 (768px 이하) */
+@media (max-width: 768px) {
+    .top-nav {
+        padding: 0 15px;
+        height: 50px;
+    }
+    
+    .nav-logo-img {
+        height: 30px;
+    }
+    
+    .nav-logo-text {
+        height: 50px;
+    }
+    
+    .sidebar {
+        position: fixed;
+        z-index: 200;
+        height: 100vh;
+    }
+    
+    .sidebar.collapsed {
+        transform: translateX(-100%);
+    }
+    
+    .content {
+        padding: 15px;
+    }
+    
+    .account-status {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .status-card {
+        min-width: 100%;
+    }
+    
+    .search-bar {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .search-select,
+    .search-input {
+        width: 100%;
+    }
+    
+    .table-status-bar {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .table-actions {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    table {
+        font-size: 12px;
+        min-width: 800px;
+    }
+    
+    th, td {
+        padding: 8px 10px;
+    }
+    
+    .right-sidebar {
+        width: 100%;
+        right: -100%;
+    }
+    
+    .date-filter-section {
+        flex-direction: column;
+    }
+    
+    .date-range-picker {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .date-range-picker input[type="date"] {
+        width: 100%;
+    }
+    
+    .quick-date-buttons {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+    
+    .quick-date-btn {
+        flex: 1;
+        min-width: calc(50% - 4px);
+    }
+    
+    .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .pagination-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .result-stats {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .stat-item {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+/* 작은 모바일 화면 (480px 이하) */
+@media (max-width: 480px) {
+    .top-nav {
+        padding: 0 10px;
+    }
+    
+    .nav-logo-text {
+        display: none;
+    }
+    
+    .content {
+        padding: 10px;
+    }
+    
+    .account-info {
+        font-size: 12px;
+        padding: 10px;
+    }
+    
+    .status-card {
+        padding: 15px;
+    }
+    
+    .status-card h4 {
+        font-size: 12px;
+    }
+    
+    .status-card .count {
+        font-size: 20px;
+    }
+    
+    table {
+        font-size: 11px;
+        min-width: 700px;
+    }
+    
+    th, td {
+        padding: 6px 8px;
+    }
+    
+    .btn-register,
+    .btn-delete,
+    .btn-extend {
+        font-size: 11px;
+        padding: 5px 8px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+        padding: 15px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group input,
+    .form-group textarea {
+        padding: 8px;
+        font-size: 14px;
+    }
+}

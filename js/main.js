@@ -3,6 +3,7 @@ import { initNoticePage } from './pages/notice.js';
 import { initFAQPage } from './pages/faq.js';
 import { initAdPage } from './pages/ad.js';
 import { initSettlementPage } from './pages/settlement.js';
+import { initRewardPage } from './pages/reward.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. 로그인 체크
@@ -32,6 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const roleElement = document.getElementById('info-role');
     if (roleElement) {
         roleElement.textContent = roleText;
+    }
+    
+    // 리워드 메뉴는 관리자만 표시
+    const rewardMenuItem = document.getElementById('reward-menu-item');
+    if (rewardMenuItem) {
+        if (userRole === 'admin') {
+            rewardMenuItem.style.display = 'block';
+        } else {
+            rewardMenuItem.style.display = 'none';
+        }
     }
 
     // 3. 네비게이션 드롭다운
@@ -79,6 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'settlement':
                 initSettlementPage(pageContent);
+                break;
+            case 'reward':
+                initRewardPage(pageContent);
                 break;
             default:
                 pageContent.innerHTML = `<p>${pageName} 화면을 준비 중입니다.</p>`;

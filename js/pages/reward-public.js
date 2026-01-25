@@ -1,58 +1,57 @@
 import { API_BASE_URL } from '../config.js';
 
-// 공통 헤더 생성 함수
-const getAuthHeaders = () => {
-    const headers = {
+// URL 파라미터에서 사용자 정보 추출
+const getUrlParams = () => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        user_id: params.get('user_id'),
+        token: params.get('token'),
+        user_token: params.get('user_token')
+    };
+};
+
+// 공개 API 호출 (인증 헤더 없음)
+const getPublicHeaders = () => {
+    return {
         'Content-Type': 'application/json',
     };
-    
-    // 세션 토큰 가져오기
-    const token = sessionStorage.getItem('sessionToken');
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    return headers;
 };
 
-export const initRewardPage = (container) => {
-    // 관리자 권한 체크
-    const userRole = sessionStorage.getItem('userRole');
-    if (userRole !== 'admin') {
-        container.innerHTML = `
-            <div style="text-align: center; padding: 40px;">
-                <h3>접근 권한이 없습니다.</h3>
-                <p>이 페이지는 관리자만 접근할 수 있습니다.</p>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = `
-        <div class="reward-info">
-            <strong>리워드 관리</strong><br>
-            리워드 상품을 확인하고 태그 이름을 입력할 수 있습니다.
-        </div>
-
-        <div class="reward-container" id="reward-container">
-            <!-- 리워드 상품 목록이 여기에 동적으로 로드됩니다 -->
-        </div>
-    `;
-
-    initRewardEvents();
-    loadRewardList();
-};
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = getUrlParams();
+    console.log('URL 파라미터:', urlParams);
+    loadRewardList(urlParams);
+});
 
 // 리워드 목록 로드
-const loadRewardList = async () => {
+const loadRewardList = async (urlParams = {}) => {
     try {
-        const url = `${API_BASE_URL}/rewards`;
+        // 공개 엔드포인트 사용 (인증 없이 접근 가능)
+        let url = `${API_BASE_URL}/rewards`;
         
-        console.log('리워드 목록 API 호출:', url);
+        // URL 파라미터가 있으면 쿼리 파라미터로 추가
+        const queryParams = [];
+        if (urlParams.user_id) {
+            queryParams.push(`user_id=${encodeURIComponent(urlParams.user_id)}`);
+        }
+        if (urlParams.token) {
+            queryParams.push(`token=${encodeURIComponent(urlParams.token)}`);
+        }
+        if (urlParams.user_token) {
+            queryParams.push(`user_token=${encodeURIComponent(urlParams.user_token)}`);
+        }
+        
+        if (queryParams.length > 0) {
+            url += '?' + queryParams.join('&');
+        }
+        
+        console.log('리워드 목록 API 호출 (공개):', url);
+        console.log('사용자 파라미터:', urlParams);
         
         const response = await fetch(url, {
             method: 'GET',
-            headers: getAuthHeaders(),
+            headers: getPublicHeaders(),
         });
 
         if (response.ok) {
@@ -191,27 +190,61 @@ const bindSubmitButtons = () => {
     });
 };
 
-// 이미지 태그 제출
+// 이미지 태그 제출 (공개 API - 인증 없이)
 const submitImageTag = async (rewardId, imageTag) => {
     try {
-        const url = `${API_BASE_URL}/rewards/${rewardId}`;
+        // URL 파라미터 가져오기
+        const urlParams = getUrlParams();
         
-        console.log('이미지 태그 제출:', url, { image_tag: imageTag });
+        // 공개 엔드포인트 사용 (인증 없이 접근 가능)
+        let url = `${API_BASE_URL}/rewards/${rewardId}`;
+        
+        // URL 파라미터가 있으면 쿼리 파라미터로 추가
+        const queryParams = [];
+        if (urlParams.user_id) {
+            queryParams.push(`user_id=${encodeURIComponent(urlParams.user_id)}`);
+        }
+        if (urlParams.token) {
+            queryParams.push(`token=${encodeURIComponent(urlParams.token)}`);
+        }
+        if (urlParams.user_token) {
+            queryParams.push(`user_token=${encodeURIComponent(urlParams.user_token)}`);
+        }
+        
+        if (queryParams.length > 0) {
+            url += '?' + queryParams.join('&');
+        }
+        
+        // 요청 본문에 사용자 정보 포함
+        const requestBody = {
+            image_tag: imageTag
+        };
+        
+        if (urlParams.user_id) {
+            requestBody.user_id = urlParams.user_id;
+        }
+        if (urlParams.token) {
+            requestBody.token = urlParams.token;
+        }
+        if (urlParams.user_token) {
+            requestBody.user_token = urlParams.user_token;
+        }
+        
+        console.log('태그 이름 제출 (공개):', url, requestBody);
         
         const response = await fetch(url, {
             method: 'PUT',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-                image_tag: imageTag
-            })
+            headers: getPublicHeaders(),
+            body: JSON.stringify(requestBody)
         });
 
         if (response.ok) {
             const data = await response.json();
-            console.log('이미지 태그 제출 성공:', data);
+            console.log('태그 이름 제출 성공:', data);
             alert('태그 이름이 성공적으로 저장되었습니다.');
-            // 목록 새로고침
-            loadRewardList();
+            // 목록 새로고침 (랜덤으로 다시 선택)
+            const urlParams = getUrlParams();
+            loadRewardList(urlParams);
         } else {
             let errorData = {};
             try {
@@ -221,15 +254,11 @@ const submitImageTag = async (rewardId, imageTag) => {
                 errorData = { message: `서버 오류 (${response.status})` };
             }
             
-            console.error('이미지 태그 제출 실패:', response.status, errorData);
+            console.error('태그 이름 제출 실패:', response.status, errorData);
             alert(`태그 이름 저장 실패: ${errorData.message || errorData.detail || '서버 오류가 발생했습니다.'}`);
         }
     } catch (error) {
-        console.error('이미지 태그 제출 API 호출 오류:', error);
+        console.error('태그 이름 제출 API 호출 오류:', error);
         alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
     }
-};
-
-const initRewardEvents = () => {
-    // 추가 이벤트가 필요하면 여기에 작성
 };

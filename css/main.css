@@ -1067,3 +1067,111 @@ th {
         height: 200px;
     }
 }
+
+/* 리워드 키워드 관리 페이지 스타일 */
+.reward-mgmt-info {
+    margin-bottom: 30px;
+    padding: 15px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.reward-mgmt-form {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+.reward-mgmt-form .form-group {
+    margin-bottom: 20px;
+}
+
+.reward-mgmt-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+}
+
+.reward-mgmt-form input[type="text"],
+.reward-mgmt-form select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.reward-mgmt-form input[type="text"]:focus,
+.reward-mgmt-form select:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.reward-mgmt-form small {
+    display: block;
+    margin-top: 5px;
+    color: #666;
+    font-size: 12px;
+}
+
+#reward-mgmt-result {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+#reward-mgmt-result h3 {
+    margin-top: 0;
+    color: #333;
+    font-size: 18px;
+}
+
+#reward-mgmt-result table {
+    margin-top: 15px;
+}
+
+#reward-mgmt-result table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    color: #333;
+}
+
+#reward-mgmt-result table td {
+    vertical-align: middle;
+}
+
+#reward-mgmt-result table a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+#reward-mgmt-result table a:hover {
+    text-decoration: underline;
+}
+
+/* 리워드 키워드 관리 페이지 반응형 */
+@media (max-width: 768px) {
+    .reward-mgmt-form {
+        padding: 15px;
+    }
+    
+    #reward-mgmt-result {
+        padding: 15px;
+    }
+    
+    #reward-mgmt-result table {
+        font-size: 12px;
+    }
+    
+    #reward-mgmt-result table th,
+    #reward-mgmt-result table td {
+        padding: 8px;
+    }
+}

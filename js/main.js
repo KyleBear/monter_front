@@ -4,6 +4,7 @@ import { initFAQPage } from './pages/faq.js';
 import { initAdPage } from './pages/ad.js';
 import { initSettlementPage } from './pages/settlement.js';
 import { initRewardPage } from './pages/reward.js';
+import { initRewardMgmtPage } from './pages/reward_mgmt.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. 로그인 체크
@@ -42,6 +43,16 @@ document.addEventListener('DOMContentLoaded', () => {
             rewardMenuItem.style.display = 'block';
         } else {
             rewardMenuItem.style.display = 'none';
+        }
+    }
+
+    // 리워드 키워드 관리 메뉴는 관리자만 표시
+    const rewardMgmtMenuItem = document.getElementById('reward-mgmt-menu-item');
+    if (rewardMgmtMenuItem) {
+        if (userRole === 'admin') {
+            rewardMgmtMenuItem.style.display = 'block';
+        } else {
+            rewardMgmtMenuItem.style.display = 'none';
         }
     }
 
@@ -93,6 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'reward':
                 initRewardPage(pageContent);
+                break;
+            case 'reward-mgmt':
+                initRewardMgmtPage(pageContent);
                 break;
             default:
                 pageContent.innerHTML = `<p>${pageName} 화면을 준비 중입니다.</p>`;

@@ -1,64 +1,91 @@
 import { API_BASE_URL } from '../config.js';
 
-// URL 파라미터에서 사용자 정보 추출
+// URL 파라미터에서 사용자 정보 추출 (선택적 - 인증 불필요)
 const getUrlParams = () => {
     const params = new URLSearchParams(window.location.search);
-    return {
+    const urlParams = {
         user_id: params.get('user_id'),
         token: params.get('token'),
         user_token: params.get('user_token')
     };
+    // URL 파라미터가 없어도 동작 (인증 토큰 불필요)
+    return urlParams;
 };
 
-// 공개 API 호출 (인증 헤더 없음)
+// 공개 API 호출 (인증 헤더 없음 - sessionStorage 사용 안 함)
 const getPublicHeaders = () => {
     return {
         'Content-Type': 'application/json',
+        // Authorization 헤더를 명시적으로 제외 - 인증 토큰 불필요
     };
+};
+
+// 페이지 초기화 함수 (관리자 체크 제외)
+export const initRewardPage = (container) => {
+    // 관리자 권한 체크 제외 - 공개 페이지이므로 모든 사용자 접근 가능
+    
+    if (container) {
+        container.innerHTML = `
+            <div class="reward-info">
+                <strong>리워드</strong><br>
+                리워드 상품을 확인하고 태그 이름을 입력할 수 있습니다.
+            </div>
+
+            <div class="reward-container" id="reward-container">
+                <!-- 리워드 상품 목록이 여기에 동적으로 로드됩니다 -->
+            </div>
+        `;
+    }
+
+    initRewardEvents();
+    const urlParams = getUrlParams();
+    loadRewardList(urlParams);
 };
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', () => {
     const urlParams = getUrlParams();
     console.log('URL 파라미터:', urlParams);
-    loadRewardList(urlParams);
+    
+    // 컨테이너가 이미 HTML에 있으면 그대로 사용, 없으면 initRewardPage 호출
+    const container = document.getElementById('reward-container');
+    if (container && container.parentElement) {
+        // reward.html에서 이미 HTML 구조가 있으므로 그대로 사용
+        initRewardEvents();
+        loadRewardList(urlParams);
+    } else {
+        // 동적으로 생성해야 하는 경우
+        const pageContainer = document.querySelector('.reward-page-container') || document.body;
+        initRewardPage(pageContainer);
+    }
 });
 
 // 리워드 목록 로드
 const loadRewardList = async (urlParams = {}) => {
     try {
-        // 공개 엔드포인트 사용 (인증 없이 접근 가능)
-        let url = `${API_BASE_URL}/rewards`;
+        // 공개 엔드포인트 사용 (인증 없이 접근 가능) - /rewards/public
+        // 백엔드 엔드포인트: GET /rewards/public
+        // 랜덤으로 1개의 리워드 반환 (image_url이 있는 것만)
+        const url = `${API_BASE_URL}/rewards/public`;
         
-        // URL 파라미터가 있으면 쿼리 파라미터로 추가
-        const queryParams = [];
-        if (urlParams.user_id) {
-            queryParams.push(`user_id=${encodeURIComponent(urlParams.user_id)}`);
-        }
-        if (urlParams.token) {
-            queryParams.push(`token=${encodeURIComponent(urlParams.token)}`);
-        }
-        if (urlParams.user_token) {
-            queryParams.push(`user_token=${encodeURIComponent(urlParams.user_token)}`);
-        }
+        console.log('리워드 목록 API 호출 (공개 엔드포인트):', url);
         
-        if (queryParams.length > 0) {
-            url += '?' + queryParams.join('&');
-        }
-        
-        console.log('리워드 목록 API 호출 (공개):', url);
-        console.log('사용자 파라미터:', urlParams);
-        
+        // 인증 헤더 없이 공개 API 호출 (인증 토큰 불필요)
+        // sessionStorage나 Authorization 헤더를 절대 사용하지 않음
         const response = await fetch(url, {
             method: 'GET',
-            headers: getPublicHeaders(),
+            headers: {
+                'Content-Type': 'application/json'
+                // Authorization 헤더를 명시적으로 제외
+            },
         });
 
         if (response.ok) {
             const data = await response.json();
-            console.log('리워드 목록 API 응답:', data);
+            console.log('리워드 목록 API 응답 (공개 엔드포인트):', data);
             
-            // 다양한 응답 형식 지원
+            // 백엔드 공개 API 응답 형식: { "success": True, "data": { "rewards": [...] } }
+            // 백엔드에서 이미 랜덤으로 1개를 반환하므로 그대로 사용
             let rewards = [];
             if (data.data && data.data.rewards && Array.isArray(data.data.rewards)) {
                 rewards = data.data.rewards;
@@ -68,20 +95,11 @@ const loadRewardList = async (urlParams = {}) => {
                 rewards = data;
             }
             
-            console.log('전체 리워드 개수:', rewards.length);
+            console.log('받은 리워드 개수:', rewards.length);
+            console.log('리워드 데이터:', rewards);
             
-            // 랜덤으로 하나의 리워드만 선택
-            if (rewards.length > 0) {
-                const randomIndex = Math.floor(Math.random() * rewards.length);
-                const randomReward = rewards[randomIndex];
-                console.log('랜덤으로 선택된 리워드:', randomReward);
-                console.log('선택된 인덱스:', randomIndex);
-                
-                // 하나의 리워드만 배열로 만들어서 렌더링
-                renderRewardList([randomReward]);
-            } else {
-                renderRewardList([]);
-            }
+            // 백엔드에서 이미 랜덤으로 1개를 반환하므로 그대로 렌더링
+            renderRewardList(rewards);
         } else {
             let errorData = {};
             try {
@@ -122,6 +140,13 @@ const renderRewardList = (rewards) => {
     
     console.log('리워드 목록 렌더링 시작, 개수:', rewards.length);
 
+    // 원본 reward 데이터를 저장 (태그 이름 검증용)
+    const rewardDataMap = new Map();
+    rewards.forEach(reward => {
+        const rewardId = reward.id || reward.reward_id;
+        rewardDataMap.set(rewardId, reward);
+    });
+
     container.innerHTML = rewards.map((reward, index) => {
         const rewardId = reward.id || reward.reward_id || index;
         const imageUrl = reward.image_url || '';
@@ -150,9 +175,11 @@ const renderRewardList = (rewards) => {
                         <textarea 
                             class="reward-image-tag-input" 
                             data-reward-id="${rewardId}"
+                            data-original-tag="${imageTag}"
                             placeholder="태그 이름을 입력하세요"
                             rows="3"
                         >${imageTag}</textarea>
+                        <small style="color: #666; font-size: 12px;">테이블의 태그 이름과 일치해야 합니다.</small>
                     </div>
                     <button class="reward-submit-btn" data-reward-id="${rewardId}">제출</button>
                 </div>
@@ -160,12 +187,12 @@ const renderRewardList = (rewards) => {
         `;
     }).join('');
 
-    // 제출 버튼 이벤트 바인딩
-    bindSubmitButtons();
+    // 제출 버튼 이벤트 바인딩 (reward 데이터 맵 전달)
+    bindSubmitButtons(rewardDataMap);
 };
 
 // 제출 버튼 이벤트 바인딩
-const bindSubmitButtons = () => {
+const bindSubmitButtons = (rewardDataMap = new Map()) => {
     const submitButtons = document.querySelectorAll('.reward-submit-btn');
     submitButtons.forEach(btn => {
         btn.addEventListener('click', async (e) => {
@@ -183,6 +210,23 @@ const bindSubmitButtons = () => {
             if (!imageTag) {
                 alert('태그 이름을 입력해주세요.');
                 return;
+            }
+
+            // 테이블의 태그 이름과 일치하는지 확인
+            const originalTag = textarea.getAttribute('data-original-tag') || '';
+            const rewardData = rewardDataMap.get(parseInt(rewardId)) || {};
+            const tableTag = rewardData.image_tag || originalTag;
+
+            if (tableTag && imageTag !== tableTag) {
+                const confirmSave = confirm(
+                    `입력한 태그 이름이 테이블의 값과 일치하지 않습니다.\n\n` +
+                    `테이블 값: ${tableTag}\n` +
+                    `입력한 값: ${imageTag}\n\n` +
+                    `계속 저장하시겠습니까?`
+                );
+                if (!confirmSave) {
+                    return;
+                }
             }
             
             await submitImageTag(rewardId, imageTag);
@@ -232,9 +276,14 @@ const submitImageTag = async (rewardId, imageTag) => {
         
         console.log('태그 이름 제출 (공개):', url, requestBody);
         
+        // 인증 헤더 없이 공개 API 호출 (인증 토큰 불필요)
+        // sessionStorage나 Authorization 헤더를 절대 사용하지 않음
         const response = await fetch(url, {
             method: 'PUT',
-            headers: getPublicHeaders(),
+            headers: {
+                'Content-Type': 'application/json'
+                // Authorization 헤더를 명시적으로 제외
+            },
             body: JSON.stringify(requestBody)
         });
 
@@ -261,4 +310,9 @@ const submitImageTag = async (rewardId, imageTag) => {
         console.error('태그 이름 제출 API 호출 오류:', error);
         alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
     }
+};
+
+// 이벤트 초기화 함수
+const initRewardEvents = () => {
+    // 추가 이벤트가 필요하면 여기에 작성
 };

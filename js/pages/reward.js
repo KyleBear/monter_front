@@ -123,6 +123,13 @@ const renderRewardList = (rewards) => {
     
     console.log('리워드 목록 렌더링 시작, 개수:', rewards.length);
 
+    // 원본 reward 데이터를 저장 (태그 이름 검증용)
+    const rewardDataMap = new Map();
+    rewards.forEach(reward => {
+        const rewardId = reward.id || reward.reward_id;
+        rewardDataMap.set(rewardId, reward);
+    });
+
     container.innerHTML = rewards.map((reward, index) => {
         const rewardId = reward.id || reward.reward_id || index;
         const imageUrl = reward.image_url || '';
@@ -151,9 +158,11 @@ const renderRewardList = (rewards) => {
                         <textarea 
                             class="reward-image-tag-input" 
                             data-reward-id="${rewardId}"
+                            data-original-tag="${imageTag}"
                             placeholder="태그 이름을 입력하세요"
                             rows="3"
                         >${imageTag}</textarea>
+                        <small style="color: #666; font-size: 12px;">테이블의 태그 이름과 일치해야 합니다.</small>
                     </div>
                     <button class="reward-submit-btn" data-reward-id="${rewardId}">제출</button>
                 </div>
@@ -161,12 +170,12 @@ const renderRewardList = (rewards) => {
         `;
     }).join('');
 
-    // 제출 버튼 이벤트 바인딩
-    bindSubmitButtons();
+    // 제출 버튼 이벤트 바인딩 (reward 데이터 맵 전달)
+    bindSubmitButtons(rewardDataMap);
 };
 
 // 제출 버튼 이벤트 바인딩
-const bindSubmitButtons = () => {
+const bindSubmitButtons = (rewardDataMap = new Map()) => {
     const submitButtons = document.querySelectorAll('.reward-submit-btn');
     submitButtons.forEach(btn => {
         btn.addEventListener('click', async (e) => {
@@ -184,6 +193,23 @@ const bindSubmitButtons = () => {
             if (!imageTag) {
                 alert('태그 이름을 입력해주세요.');
                 return;
+            }
+
+            // 테이블의 태그 이름과 일치하는지 확인
+            const originalTag = textarea.getAttribute('data-original-tag') || '';
+            const rewardData = rewardDataMap.get(parseInt(rewardId)) || {};
+            const tableTag = rewardData.image_tag || originalTag;
+
+            if (tableTag && imageTag !== tableTag) {
+                const confirmSave = confirm(
+                    `입력한 태그 이름이 테이블의 값과 일치하지 않습니다.\n\n` +
+                    `테이블 값: ${tableTag}\n` +
+                    `입력한 값: ${imageTag}\n\n` +
+                    `계속 저장하시겠습니까?`
+                );
+                if (!confirmSave) {
+                    return;
+                }
             }
             
             await submitImageTag(rewardId, imageTag);

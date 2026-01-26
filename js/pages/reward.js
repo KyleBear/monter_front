@@ -159,9 +159,9 @@ const renderRewardList = (rewards) => {
                             class="reward-image-tag-input" 
                             data-reward-id="${rewardId}"
                             data-original-tag="${imageTag}"
-                            placeholder="태그 이름을 입력하세요"
+                            placeholder="태그이름을 입력해주세요"
                             rows="3"
-                        >${imageTag}</textarea>
+                        ></textarea>
                         <small style="color: #666; font-size: 12px;">테이블의 태그 이름과 일치해야 합니다.</small>
                     </div>
                     <button class="reward-submit-btn" data-reward-id="${rewardId}">제출</button>
@@ -200,16 +200,12 @@ const bindSubmitButtons = (rewardDataMap = new Map()) => {
             const rewardData = rewardDataMap.get(parseInt(rewardId)) || {};
             const tableTag = rewardData.image_tag || originalTag;
 
-            if (tableTag && imageTag !== tableTag) {
-                const confirmSave = confirm(
-                    `입력한 태그 이름이 테이블의 값과 일치하지 않습니다.\n\n` +
-                    `테이블 값: ${tableTag}\n` +
-                    `입력한 값: ${imageTag}\n\n` +
-                    `계속 저장하시겠습니까?`
-                );
-                if (!confirmSave) {
-                    return;
-                }
+            // 태그 일치 여부 확인 및 메시지 표시
+            if (tableTag && imageTag === tableTag) {
+                alert('태그가 일치합니다.');
+            } else if (tableTag && imageTag !== tableTag) {
+                alert('태그가 일치하지 않습니다.');
+                return; // 일치하지 않으면 제출하지 않음
             }
             
             await submitImageTag(rewardId, imageTag);

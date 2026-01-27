@@ -40,7 +40,7 @@ const redirectToNaver = async () => {
         console.log('짧은 링크:', shortLink);
 
         // 백엔드 API 호출하여 해당 링크의 키워드 조합 가져오기
-        // 예상 엔드포인트: GET /rewards/links/{shortLink}
+        // 엔드포인트: GET /rewards/links/{short_code}
         const url = `${API_BASE_URL}/rewards/links/${shortLink}`;
         
         console.log('링크 정보 API 호출:', url);
@@ -76,8 +76,8 @@ const redirectToNaver = async () => {
 
             // 랜덤으로 키워드 조합 선택
             const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
-            const query = randomKeyword.query || randomKeyword.query_keyword || '';
-            const acq = randomKeyword.acq || randomKeyword.acq_keyword || '';
+            const query = randomKeyword.query_keyword || randomKeyword.query || '';
+            const acq = randomKeyword.acq_keyword || randomKeyword.acq || '';
 
             if (!query || !acq) {
                 console.error('키워드 정보가 올바르지 않습니다.');

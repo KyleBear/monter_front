@@ -123,7 +123,7 @@ export const initRewardMgmtLinkPage = (container) => {
                     <thead>
                         <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd;">
                             <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">상품명</th>
-                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">네이버 URL</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">리디렉트 URL</th>
                             <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">쿼리</th>
                             <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Acq</th>
                             <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">키워드 개수</th>
@@ -315,31 +315,20 @@ const createAllLinks = async (productName, queryList, acqList) => {
             return;
         }
 
-        // 모든 조합 생성 및 각 조합의 네이버 URL 생성
-        const keywordCombinations = [];
-        uniqueQueries.forEach(query => {
-            uniqueAcqs.forEach(acq => {
-                const naverUrl = generateNaverUrl(query, acq);
-                keywordCombinations.push({
-                    query: query,
-                    acq: acq,
-                    reward_link: naverUrl  // 각 조합의 네이버 URL
-                });
-            });
-        });
-
-        // 백엔드 API 호출 - keywords 배열로 전송 (각 조합의 네이버 URL 포함)
+        // 백엔드 API 호출 - query_list와 acq_list 전송
+        // 백엔드는 이를 받아서 모든 조합을 생성하고, 각 조합마다 별도의 link_id를 생성함
         const url = `${API_BASE_URL}/rewards/links`;
         const requestBody = {
             product_name: productName,
-            keywords: keywordCombinations  // 각 조합과 네이버 URL 포함
+            query_list: uniqueQueries,  // 쿼리 리스트
+            acq_list: uniqueAcqs        // acq 리스트
         };
 
         console.log('링크 생성 API 호출:', url);
         console.log('요청 본문:', JSON.stringify(requestBody, null, 2));
         console.log(`쿼리 개수: ${uniqueQueries.length}, Acq 개수: ${uniqueAcqs.length}`);
-        console.log(`생성된 조합 개수: ${keywordCombinations.length}개`);
-        console.log(`각 조합의 네이버 URL이 reward_link에 저장됩니다.`);
+        console.log(`예상 조합 개수: ${uniqueQueries.length * uniqueAcqs.length}개`);
+        console.log(`백엔드가 각 조합마다 별도의 link_id를 생성합니다.`);
 
         const response = await fetch(url, {
             method: 'POST',
@@ -356,7 +345,8 @@ const createAllLinks = async (productName, queryList, acqList) => {
             const shortCode = responseData.short_code;
             const baseUrl = window.location.origin;
             const redirectLink = `${baseUrl}/redirect/${shortCode}`;
-            const createdCount = responseData.created_count || keywordCombinations.length;
+            const expectedCount = uniqueQueries.length * uniqueAcqs.length;
+            const createdCount = responseData.created_count || expectedCount;
             const createdLinks = responseData.links || [];
             
             console.log('생성된 링크 상세 정보:', createdLinks);
@@ -681,6 +671,8 @@ const renderLinkList = (links) => {
         const productName = link.product_name || '상품명 없음';
         const keywords = link.keywords || [];
         const rewardLink = link.reward_link || `${baseUrl}/redirect/${shortCode}`;
+        // 리다이렉트 URL은 항상 short code 기반으로 생성
+        const redirectLink = `${baseUrl}/redirect/${shortCode}`;
         
         // 첫 번째 키워드 조합의 query와 acq 표시 (대표값)
         const firstKeyword = keywords.length > 0 ? keywords[0] : null;
@@ -697,7 +689,7 @@ const renderLinkList = (links) => {
                 </td>
                 <td style="padding: 12px; border: 1px solid #ddd;">
                     <div style="display: flex; align-items: center; gap: 5px;">
-                        <input type="text" id="link-url-${shortCode}" value="${rewardLink}" readonly style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px; background: #f5f5f5; font-size: 12px;">
+                        <input type="text" id="link-url-${shortCode}" value="${redirectLink}" readonly style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px; background: #f5f5f5; font-size: 12px;">
                         <button class="btn-copy-link" data-short-code="${shortCode}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">복사</button>
                     </div>
                 </td>
@@ -719,7 +711,7 @@ const renderLinkList = (links) => {
                     </div>
                     <div style="margin-bottom: 10px;">
                         <strong>리다이렉트 URL: </strong>
-                        <span style="color: #007bff; font-family: monospace;">${rewardLink}</span>
+                        <span style="color: #007bff; font-family: monospace;">${redirectLink}</span>
                     </div>
                     <div style="margin-bottom: 15px;">
                         <strong>연관된 키워드 조합 (${keywords.length}개)</strong>
@@ -737,6 +729,10 @@ const renderLinkList = (links) => {
                             ${keywords.length > 0 ? keywords.map((keyword, kwIndex) => {
                                 const query = keyword.query_keyword || keyword.query || '';
                                 const acq = keyword.acq_keyword || keyword.acq || '';
+                                const keywordId = keyword.keyword_id || '';
+                                const linkIds = link.link_ids || [];
+                                const firstLinkId = linkIds.length > 0 ? linkIds[0] : null;
+                                // 네이버 URL은 acq와 keyword(query)를 조합한 네이버 URL 사용
                                 const keywordNaverUrl = generateNaverUrl(query, acq);
                                 return `
                                     <tr style="border-bottom: 1px solid #ddd;">
@@ -747,6 +743,7 @@ const renderLinkList = (links) => {
                                             <div style="display: flex; align-items: center; gap: 5px;">
                                                 <input type="text" value="${keywordNaverUrl}" readonly style="flex: 1; padding: 4px; border: 1px solid #ddd; border-radius: 4px; background: #f5f5f5; font-size: 11px; font-family: monospace;">
                                                 <button class="btn-copy-keyword-url" data-url="${keywordNaverUrl}" style="padding: 4px 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">복사</button>
+                                                ${keywordId ? `<button class="btn-delete-keyword-from-table" data-short-code="${shortCode}" data-link-id="${firstLinkId}" data-keyword-id="${keywordId}" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">삭제</button>` : ''}
                                             </div>
                                         </td>
                                     </tr>
@@ -803,6 +800,31 @@ const bindLinkEvents = (links) => {
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
                 alert('네이버 URL이 클립보드에 복사되었습니다.');
+            }
+        });
+    });
+
+    // 네이버 링크 삭제 버튼 (상세 테이블에서)
+    document.querySelectorAll('.btn-delete-keyword-from-table').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const linkId = btn.getAttribute('data-link-id');
+            const keywordId = btn.getAttribute('data-keyword-id');
+            const shortCode = btn.getAttribute('data-short-code');
+            
+            if (!linkId || !keywordId) {
+                alert('링크 ID 또는 키워드 ID를 찾을 수 없습니다.');
+                return;
+            }
+            
+            if (confirm('이 네이버 링크(키워드 조합)를 삭제하시겠습니까?')) {
+                try {
+                    await deleteKeyword(linkId, keywordId);
+                    // 목록 새로고침
+                    loadLinkList();
+                } catch (error) {
+                    console.error('키워드 삭제 오류:', error);
+                    alert('키워드 삭제 중 오류가 발생했습니다.');
+                }
             }
         });
     });

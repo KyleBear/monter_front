@@ -84,15 +84,21 @@ export const initRewardMgmtLinkPage = (container) => {
             </div>
             <div class="form-group" style="margin-top: 15px;">
                 <label>쿼리 (Query) <span style="color: red;">*</span></label>
-                <input type="text" id="link-query-input" placeholder="쿼리 키워드를 입력하세요" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <div id="query-list" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                    <!-- 동적으로 추가되는 쿼리 입력 필드들 -->
+                </div>
+                <button type="button" id="add-query-btn" style="margin-top: 10px; padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">+ 추가</button>
             </div>
             <div class="form-group" style="margin-top: 15px;">
                 <label>Acq <span style="color: red;">*</span></label>
-                <input type="text" id="link-acq-input" placeholder="acq 키워드를 입력하세요" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <div id="acq-list" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                    <!-- 동적으로 추가되는 acq 입력 필드들 -->
+                </div>
+                <button type="button" id="add-acq-btn" style="margin-top: 10px; padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">+ 추가</button>
             </div>
             <div class="form-group" style="margin-top: 15px;">
-                <button id="link-create-btn" class="btn-register" style="width: 100%; padding: 12px; font-size: 16px; font-weight: bold;">
-                    랜덤 링크 생성
+                <button id="link-create-all-btn" class="btn-register" style="width: 100%; padding: 12px; font-size: 16px; font-weight: bold;">
+                    모든 조합으로 랜덤 링크 생성
                 </button>
             </div>
             <div style="margin-top: 20px; padding: 15px; background: #f0f8ff; border-left: 4px solid #007bff; border-radius: 4px;">
@@ -141,32 +147,139 @@ export const initRewardMgmtLinkPage = (container) => {
 
 // 이벤트 초기화
 const initRewardMgmtLinkEvents = () => {
-    // 랜덤 링크 생성 버튼
-    const createBtn = document.getElementById('link-create-btn');
-    if (createBtn) {
-        createBtn.addEventListener('click', async () => {
+    // 쿼리 추가 버튼
+    const addQueryBtn = document.getElementById('add-query-btn');
+    if (addQueryBtn) {
+        addQueryBtn.addEventListener('click', () => {
+            addQueryRow();
+        });
+    }
+
+    // Acq 추가 버튼
+    const addAcqBtn = document.getElementById('add-acq-btn');
+    if (addAcqBtn) {
+        addAcqBtn.addEventListener('click', () => {
+            addAcqRow();
+        });
+    }
+
+    // 모든 조합으로 랜덤 링크 생성 버튼
+    const createAllBtn = document.getElementById('link-create-all-btn');
+    if (createAllBtn) {
+        createAllBtn.addEventListener('click', async () => {
             const productName = document.getElementById('link-product-name').value.trim();
-            const query = document.getElementById('link-query-input').value.trim();
-            const acq = document.getElementById('link-acq-input').value.trim();
             
             if (!productName) {
                 alert('상품명을 입력해주세요.');
                 return;
             }
 
-            if (!query) {
-                alert('쿼리를 입력해주세요.');
+            const queries = getQueries();
+            const acqs = getAcqs();
+            
+            if (queries.length === 0) {
+                alert('최소 1개 이상의 쿼리를 추가해주세요.');
+                return;
+            }
+            
+            if (acqs.length === 0) {
+                alert('최소 1개 이상의 acq를 추가해주세요.');
                 return;
             }
 
-            if (!acq) {
-                alert('acq를 입력해주세요.');
-                return;
-            }
+            // 모든 쿼리와 모든 acq의 조합 생성
+            const combinations = [];
+            queries.forEach(query => {
+                acqs.forEach(acq => {
+                    combinations.push({ query, acq });
+                });
+            });
 
-            await createNewLink(productName, query, acq);
+            await createAllLinks(productName, combinations);
         });
     }
+
+    // 초기 입력창 하나씩 추가
+    addQueryRow();
+    addAcqRow();
+};
+
+// 쿼리 행 추가 함수
+const addQueryRow = () => {
+    const container = document.getElementById('query-list');
+    if (!container) return;
+
+    const rowId = `query_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const row = document.createElement('div');
+    row.className = 'query-row';
+    row.setAttribute('data-row-id', rowId);
+    row.style.cssText = 'display: flex; gap: 10px; align-items: center; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px;';
+    
+    row.innerHTML = `
+        <input type="text" class="query-input" placeholder="쿼리 키워드를 입력하세요" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;" required>
+        <button type="button" class="btn-remove-query" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">X</button>
+    `;
+
+    container.appendChild(row);
+
+    // 삭제 버튼 이벤트
+    row.querySelector('.btn-remove-query').addEventListener('click', () => {
+        row.remove();
+    });
+};
+
+// Acq 행 추가 함수
+const addAcqRow = () => {
+    const container = document.getElementById('acq-list');
+    if (!container) return;
+
+    const rowId = `acq_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const row = document.createElement('div');
+    row.className = 'acq-row';
+    row.setAttribute('data-row-id', rowId);
+    row.style.cssText = 'display: flex; gap: 10px; align-items: center; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px;';
+    
+    row.innerHTML = `
+        <input type="text" class="acq-input" placeholder="acq 키워드를 입력하세요" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;" required>
+        <button type="button" class="btn-remove-acq" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">X</button>
+    `;
+
+    container.appendChild(row);
+
+    // 삭제 버튼 이벤트
+    row.querySelector('.btn-remove-acq').addEventListener('click', () => {
+        row.remove();
+    });
+};
+
+// 입력된 쿼리 목록 가져오기
+const getQueries = () => {
+    const rows = document.querySelectorAll('.query-row');
+    const queries = [];
+    
+    rows.forEach(row => {
+        const query = row.querySelector('.query-input').value.trim();
+        if (query) {
+            queries.push(query);
+        }
+    });
+    
+    return queries;
+};
+
+// 입력된 Acq 목록 가져오기
+const getAcqs = () => {
+    const rows = document.querySelectorAll('.acq-row');
+    const acqs = [];
+    
+    rows.forEach(row => {
+        const acq = row.querySelector('.acq-input').value.trim();
+        if (acq) {
+            acqs.push(acq);
+        }
+    });
+    
+    return acqs;
 };
 
 // 네이버 URL 생성 함수
@@ -186,7 +299,108 @@ const generateNaverUrl = (query, acq) => {
     return naverUrl;
 };
 
-// 새 링크 생성
+// 모든 조합으로 랜덤 링크 생성
+const createAllLinks = async (productName, combinations) => {
+    try {
+        const baseUrl = window.location.origin;
+        let successCount = 0;
+        let failCount = 0;
+        const errors = [];
+
+        // 각 조합마다 랜덤 링크 생성
+        for (const comb of combinations) {
+            try {
+                const shortLink = generateShortLink();
+                const redirectLink = `${baseUrl}/redirect/${shortLink}`;
+                const naverUrl = generateNaverUrl(comb.query, comb.acq);
+
+                // 백엔드 API 호출
+                const url = `${API_BASE_URL}/rewards/links`;
+                const requestBody = {
+                    short_link: shortLink,
+                    product_name: productName,
+                    redirect_url: naverUrl,
+                    keywords: [{
+                        query: comb.query,
+                        acq: comb.acq
+                    }]
+                };
+
+                console.log('링크 생성 API 호출:', url, requestBody);
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('링크 생성 성공:', data);
+                    successCount++;
+                } else {
+                    let errorMessage = `서버 오류 (${response.status})`;
+                    try {
+                        const errorText = await response.text();
+                        if (errorText) {
+                            try {
+                                const errorData = JSON.parse(errorText);
+                                if (typeof errorData === 'string') {
+                                    errorMessage = errorData;
+                                } else if (errorData.message && typeof errorData.message === 'string') {
+                                    errorMessage = errorData.message;
+                                } else if (errorData.detail && typeof errorData.detail === 'string') {
+                                    errorMessage = errorData.detail;
+                                } else {
+                                    errorMessage = errorText;
+                                }
+                            } catch (e) {
+                                errorMessage = errorText;
+                            }
+                        }
+                    } catch (e) {
+                        console.error('오류 메시지 파싱 실패:', e);
+                    }
+                    
+                    console.error('링크 생성 실패:', response.status, errorMessage);
+                    errors.push({ query: comb.query, acq: comb.acq, error: errorMessage });
+                    failCount++;
+                }
+            } catch (error) {
+                console.error('링크 생성 API 호출 오류:', error);
+                errors.push({ query: comb.query, acq: comb.acq, error: error.message });
+                failCount++;
+            }
+        }
+
+        // 결과 알림
+        let message = `링크 생성 완료!\n성공: ${successCount}개`;
+        if (failCount > 0) {
+            message += `\n실패: ${failCount}개`;
+            if (errors.length > 0 && errors.length <= 5) {
+                message += `\n\n실패한 조합:\n${errors.map(e => `- ${e.query}/${e.acq}: ${e.error}`).join('\n')}`;
+            } else if (errors.length > 5) {
+                message += `\n\n실패한 조합 (처음 5개):\n${errors.slice(0, 5).map(e => `- ${e.query}/${e.acq}: ${e.error}`).join('\n')}`;
+            }
+        }
+        alert(message);
+        
+        // 입력 필드 초기화
+        document.getElementById('link-product-name').value = '';
+        document.getElementById('query-list').innerHTML = '';
+        document.getElementById('acq-list').innerHTML = '';
+        addQueryRow(); // 빈 행 하나 추가
+        addAcqRow(); // 빈 행 하나 추가
+        
+        // 목록 새로고침
+        loadLinkList();
+    } catch (error) {
+        console.error('링크 생성 프로세스 오류:', error);
+        alert('링크 생성 중 오류가 발생했습니다.');
+    }
+};
+
+// 새 링크 생성 (단일 조합용 - 호환성 유지)
 const createNewLink = async (productName, query, acq) => {
     try {
         const shortLink = generateShortLink();
@@ -486,7 +700,7 @@ const showKeywordModal = (link) => {
                 <button id="close-keyword-modal" style="padding: 5px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">닫기</button>
             </div>
             
-            <div style="margin-bottom: 15px;">
+            <div style="margin-bottom: 15px; display: none;">
                 <button class="btn-add-keyword" data-link-id="${linkId}" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">+ 키워드 추가</button>
             </div>
             
@@ -522,10 +736,13 @@ const showKeywordModal = (link) => {
         }
     });
     
-    // 키워드 추가 버튼
-    modal.querySelector('.btn-add-keyword').addEventListener('click', () => {
-        addKeywordRow(linkId, modal);
-    });
+    // 키워드 추가 버튼 (숨김 처리됨)
+    const addKeywordBtn = modal.querySelector('.btn-add-keyword');
+    if (addKeywordBtn) {
+        addKeywordBtn.addEventListener('click', () => {
+            addKeywordRow(linkId, modal);
+        });
+    }
     
     // 키워드 저장/삭제 버튼 이벤트
     modal.querySelectorAll('.btn-save-keyword').forEach(btn => {

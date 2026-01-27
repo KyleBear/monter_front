@@ -5,6 +5,7 @@ import { initAdPage } from './pages/ad.js';
 import { initSettlementPage } from './pages/settlement.js';
 import { initRewardPage } from './pages/reward.js';
 import { initRewardMgmtPage } from './pages/reward_mgmt.js';
+import { initRewardMgmtLinkPage } from './pages/reward_mgmt_link.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. 로그인 체크
@@ -46,14 +47,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 리워드 키워드 관리 메뉴는 관리자만 표시
+    // 리워드 링크 관리 메뉴는 관리자만 표시
+    const rewardMgmtLinkMenuItem = document.getElementById('reward-mgmt-link-menu-item');
+    if (rewardMgmtLinkMenuItem) {
+        if (userRole === 'admin') {
+            rewardMgmtLinkMenuItem.style.display = 'block';
+        } else {
+            rewardMgmtLinkMenuItem.style.display = 'none';
+        }
+    }
+
+    // 리워드 키워드 관리 메뉴는 관리자만 표시 (임시로 숨김)
     const rewardMgmtMenuItem = document.getElementById('reward-mgmt-menu-item');
     if (rewardMgmtMenuItem) {
-        if (userRole === 'admin') {
-            rewardMgmtMenuItem.style.display = 'block';
-        } else {
-            rewardMgmtMenuItem.style.display = 'none';
-        }
+        // 임시로 숨김 처리
+        rewardMgmtMenuItem.style.display = 'none';
+        // if (userRole === 'admin') {
+        //     rewardMgmtMenuItem.style.display = 'block';
+        // } else {
+        //     rewardMgmtMenuItem.style.display = 'none';
+        // }
     }
 
     // 3. 네비게이션 드롭다운
@@ -107,6 +120,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'reward-mgmt':
                 initRewardMgmtPage(pageContent);
+                break;
+            case 'reward-mgmt-link':
+                initRewardMgmtLinkPage(pageContent);
                 break;
             default:
                 pageContent.innerHTML = `<p>${pageName} 화면을 준비 중입니다.</p>`;

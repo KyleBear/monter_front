@@ -509,20 +509,22 @@ const groupLinksByShortCode = (links) => {
             });
         }
         
-        // 키워드 추가
+        // 키워드 추가 (각 키워드가 속한 link_id 정보 포함)
         const group = grouped.get(shortCode);
         if (link.keywords && Array.isArray(link.keywords)) {
             link.keywords.forEach(kw => {
-                // 중복 체크
+                // 중복 체크 (link_id도 함께 확인)
                 const exists = group.keywords.some(existing => 
                     existing.keyword_id === kw.keyword_id ||
                     (existing.query_keyword === (kw.query_keyword || kw.query) &&
-                     existing.acq_keyword === (kw.acq_keyword || kw.acq))
+                     existing.acq_keyword === (kw.acq_keyword || kw.acq) &&
+                     existing.link_id === linkId)
                 );
                 
                 if (!exists) {
                     group.keywords.push({
                         keyword_id: kw.keyword_id,
+                        link_id: linkId,  // 각 키워드가 속한 link_id 추가
                         query_keyword: kw.query_keyword || kw.query,
                         acq_keyword: kw.acq_keyword || kw.acq,
                         query: kw.query_keyword || kw.query,
@@ -730,8 +732,8 @@ const renderLinkList = (links) => {
                                 const query = keyword.query_keyword || keyword.query || '';
                                 const acq = keyword.acq_keyword || keyword.acq || '';
                                 const keywordId = keyword.keyword_id || '';
-                                const linkIds = link.link_ids || [];
-                                const firstLinkId = linkIds.length > 0 ? linkIds[0] : null;
+                                // 각 키워드가 속한 link_id 사용 (firstLinkId 대신)
+                                const keywordLinkId = keyword.link_id || (link.link_ids && link.link_ids.length > 0 ? link.link_ids[0] : null);
                                 // 네이버 URL은 acq와 keyword(query)를 조합한 네이버 URL 사용
                                 const keywordNaverUrl = generateNaverUrl(query, acq);
                                 return `
@@ -743,7 +745,7 @@ const renderLinkList = (links) => {
                                             <div style="display: flex; align-items: center; gap: 5px;">
                                                 <input type="text" value="${keywordNaverUrl}" readonly style="flex: 1; padding: 4px; border: 1px solid #ddd; border-radius: 4px; background: #f5f5f5; font-size: 11px; font-family: monospace;">
                                                 <button class="btn-copy-keyword-url" data-url="${keywordNaverUrl}" style="padding: 4px 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">복사</button>
-                                                ${keywordId ? `<button class="btn-delete-keyword-from-table" data-short-code="${shortCode}" data-link-id="${firstLinkId}" data-keyword-id="${keywordId}" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">삭제</button>` : ''}
+                                                ${keywordId && keywordLinkId ? `<button class="btn-delete-keyword-from-table" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${keywordId}" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">삭제</button>` : ''}
                                             </div>
                                         </td>
                                     </tr>

@@ -18,10 +18,26 @@ const generateRandomNumber = (min = 0, max = 10) => {
 // URL에서 짧은 링크 추출
 const getShortLinkFromUrl = () => {
     const path = window.location.pathname;
-    // 예: /redirect/v8ZSBUT43vj
+    // 예: /redirect/1afyOKgmBq, /redirect/1afyOKgmBq?, /reward/redirect/1afyOKgmBq
     const parts = path.split('/');
-    if (parts.length >= 3 && parts[1] === 'redirect') {
-        return parts[2];
+    
+    // /redirect/{shortCode} 또는 /reward/redirect/{shortCode} 경로 처리
+    if (parts.length >= 3 && (parts[1] === 'redirect' || (parts[1] === 'reward' && parts[2] === 'redirect'))) {
+        // short_code 추출
+        let shortCode;
+        if (parts[1] === 'redirect') {
+            shortCode = parts[2];
+        } else if (parts[1] === 'reward' && parts[2] === 'redirect' && parts.length >= 4) {
+            shortCode = parts[3];
+        }
+        
+        if (shortCode) {
+            // ? 또는 쿼리 파라미터 제거
+            if (shortCode.includes('?')) {
+                shortCode = shortCode.split('?')[0];
+            }
+            return shortCode;
+        }
     }
     return null;
 };
@@ -29,94 +45,29 @@ const getShortLinkFromUrl = () => {
 // 리다이렉트 실행
 const redirectToNaver = async () => {
     try {
-        const shortLink = getShortLinkFromUrl();
+        const shortCode = getShortLinkFromUrl();
         
-        if (!shortLink) {
+        if (!shortCode) {
             console.error('짧은 링크를 찾을 수 없습니다.');
             document.body.innerHTML = '<div style="text-align: center; padding: 40px;"><h3>잘못된 링크입니다.</h3></div>';
             return;
         }
 
-        console.log('짧은 링크:', shortLink);
+        console.log('짧은 링크 (short_code):', shortCode);
 
-        // 백엔드 API 호출하여 해당 링크의 키워드 조합 가져오기
-        // 엔드포인트: GET /rewards/links/{short_code}
-        const url = `${API_BASE_URL}/rewards/links/${shortLink}`;
+        // 백엔드 API 호출 - GET /redirect/{short_code}
+        // 백엔드가 자동으로 네이버 URL로 302 리다이렉트를 반환함
+        // 인증 헤더 없이 호출 (공개 엔드포인트)
+        const url = `${API_BASE_URL}/redirect/${shortCode}`;
         
-        console.log('링크 정보 API 호출:', url);
+        console.log('리다이렉트 API 호출:', url);
 
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
+        // 백엔드가 302 리다이렉트를 반환하므로, window.location.href로 직접 호출
+        // 브라우저가 자동으로 리다이렉트를 따라감
+        window.location.href = url;
 
-        if (response.ok) {
-            const data = await response.json();
-            console.log('링크 정보 API 응답:', data);
-            
-            // 응답에서 키워드 조합 가져오기
-            let linkData = null;
-            if (data.data && data.data.link) {
-                linkData = data.data.link;
-            } else if (data.link) {
-                linkData = data.link;
-            } else {
-                linkData = data;
-            }
-
-            const keywords = linkData?.keywords || linkData?.keyword_combinations || [];
-            
-            if (!keywords || keywords.length === 0) {
-                console.error('키워드 조합이 없습니다.');
-                document.body.innerHTML = '<div style="text-align: center; padding: 40px;"><h3>등록된 키워드가 없습니다.</h3></div>';
-                return;
-            }
-
-            // 랜덤으로 키워드 조합 선택
-            const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
-            const query = randomKeyword.query_keyword || randomKeyword.query || '';
-            const acq = randomKeyword.acq_keyword || randomKeyword.acq || '';
-
-            if (!query || !acq) {
-                console.error('키워드 정보가 올바르지 않습니다.');
-                document.body.innerHTML = '<div style="text-align: center; padding: 40px;"><h3>키워드 정보가 올바르지 않습니다.</h3></div>';
-                return;
-            }
-
-            // 네이버 검색 URL 생성
-            const ackey = generateRandomString(8);
-            const acr = generateRandomNumber(0, 10);
-            
-            const naverUrl = `https://m.search.naver.com/search.naver?` +
-                `sm=mtp_sug.top&` +
-                `where=m&` +
-                `query=${encodeURIComponent(query)}&` +
-                `ackey=${ackey}&` +
-                `acq=${encodeURIComponent(acq)}&` +
-                `acr=${acr}&` +
-                `qdt=0`;
-
-            console.log('네이버 URL 생성:', naverUrl);
-
-            // 리다이렉트
-            window.location.href = naverUrl;
-
-        } else {
-            let errorData = {};
-            try {
-                const errorText = await response.text();
-                errorData = errorText ? JSON.parse(errorText) : {};
-            } catch (e) {
-                errorData = { message: `서버 오류 (${response.status})` };
-            }
-            
-            console.error('링크 정보 로드 실패:', response.status, errorData);
-            document.body.innerHTML = `<div style="text-align: center; padding: 40px;"><h3>링크를 찾을 수 없습니다.</h3><p>${errorData.message || '서버 오류가 발생했습니다.'}</p></div>`;
-        }
     } catch (error) {
-        console.error('API 호출 오류:', error);
+        console.error('리다이렉트 오류:', error);
         document.body.innerHTML = '<div style="text-align: center; padding: 40px;"><h3>서버 연결에 실패했습니다.</h3><p>네트워크를 확인해주세요.</p></div>';
     }
 };

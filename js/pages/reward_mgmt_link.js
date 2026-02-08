@@ -836,26 +836,16 @@ const bindLinkEvents = (links) => {
         btn.addEventListener('click', async (e) => {
             const shortCode = btn.getAttribute('data-short-code');
             const link = links.find(l => l.short_code === shortCode);
-            if (link && link.link_ids && link.link_ids.length > 0) {
-                if (confirm(`이 링크(Short Code: ${shortCode})와 연관된 모든 데이터를 삭제하시겠습니까?\n연관된 링크 수: ${link.link_ids.length}개`)) {
-                    // 모든 link_id 삭제
-                    let successCount = 0;
-                    let failCount = 0;
-                    for (const linkId of link.link_ids) {
-                        try {
-                            await deleteLink(linkId);
-                            successCount++;
-                        } catch (error) {
-                            console.error(`링크 삭제 실패 (link_id: ${linkId}):`, error);
-                            failCount++;
-                        }
+            if (link) {
+                const linkCount = link.link_ids ? link.link_ids.length : 0;
+                if (confirm(`이 링크(Short Code: ${shortCode})와 연관된 모든 데이터를 삭제하시겠습니까?\n연관된 링크 수: ${linkCount}개`)) {
+                    try {
+                        await deleteLink(shortCode);
+                        loadLinkList();
+                    } catch (error) {
+                        console.error('링크 삭제 오류:', error);
+                        // deleteLink 함수 내에서 이미 alert를 표시하므로 여기서는 추가 알림 불필요
                     }
-                    if (failCount === 0) {
-                        alert(`모든 링크가 삭제되었습니다. (${successCount}개)`);
-                    } else {
-                        alert(`일부 링크 삭제에 실패했습니다.\n성공: ${successCount}개, 실패: ${failCount}개`);
-                    }
-                    loadLinkList();
                 }
             } else {
                 alert('삭제할 링크를 찾을 수 없습니다.');
@@ -906,12 +896,14 @@ const showKeywordModal = (link) => {
                     const kwId = keyword.keyword_id || kwIndex;
                     const query = keyword.query_keyword || keyword.query || '';
                     const acq = keyword.acq_keyword || keyword.acq || '';
+                    // 각 키워드의 link_id 사용 (firstLinkId 대신)
+                    const keywordLinkId = keyword.link_id || firstLinkId;
                     return `
                         <div class="keyword-item" data-keyword-id="${kwId}" style="display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
                             <input type="text" class="keyword-query" value="${query}" placeholder="query 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
                             <input type="text" class="keyword-acq" value="${acq}" placeholder="acq 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
-                            <button class="btn-save-keyword" data-short-code="${shortCode}" data-link-id="${firstLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
-                            <button class="btn-delete-keyword" data-short-code="${shortCode}" data-link-id="${firstLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
+                            <button class="btn-save-keyword" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
+                            <button class="btn-delete-keyword" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
                         </div>
                     `;
                 }).join('') : '<p style="color: #666; font-size: 14px;">등록된 키워드 조합이 없습니다.</p>'}
@@ -1140,10 +1132,10 @@ const deleteKeyword = async (linkId, keywordId) => {
     }
 };
 
-// 링크 삭제
-const deleteLink = async (linkId) => {
+// 링크 삭제 (short_code 기반)
+const deleteLink = async (shortCode) => {
     try {
-        const url = `${API_BASE_URL}/rewards/links/${linkId}`;
+        const url = `${API_BASE_URL}/rewards/links/${shortCode}`;
         
         console.log('링크 삭제 API 호출:', url);
 
@@ -1153,8 +1145,13 @@ const deleteLink = async (linkId) => {
         });
 
         if (response.ok) {
-            console.log('링크 삭제 성공');
-            alert('링크가 삭제되었습니다.');
+            const data = await response.json();
+            console.log('링크 삭제 성공:', data);
+            
+            const deletedLinks = data.deleted_links || 0;
+            const deletedKeywords = data.deleted_keywords || 0;
+            
+            alert(`링크가 삭제되었습니다.\n삭제된 링크: ${deletedLinks}개\n삭제된 키워드: ${deletedKeywords}개`);
             loadLinkList(); // 목록 새로고침
         } else {
             let errorMessage = `서버 오류 (${response.status})`;
@@ -1184,9 +1181,11 @@ const deleteLink = async (linkId) => {
             
             console.error('링크 삭제 실패:', response.status, errorMessage);
             alert(`링크 삭제 실패: ${errorMessage}`);
+            throw new Error(errorMessage);
         }
     } catch (error) {
         console.error('링크 삭제 API 호출 오류:', error);
         alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
+        throw error;
     }
 };

@@ -25,9 +25,9 @@ const generateShortLink = () => {
     return result;
 };
 
-// 랜덤 문자열 생성 (영문숫자 8글자)
+// 랜덤 문자열 생성 (소문자+숫자 8글자)
 const generateRandomString = (length = 8) => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
     for (let i = 0; i < length; i++) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));

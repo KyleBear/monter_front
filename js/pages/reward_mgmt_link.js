@@ -56,7 +56,7 @@ export const initRewardMgmtLinkPage = (container) => {
     container.innerHTML = `
         <div class="reward-mgmt-link-info">
             <strong>리워드 링크 관리</strong><br>
-            상품명, 쿼리, acq를 입력하여 짧은 랜덤 링크를 생성하고 관리할 수 있습니다.
+            상품명, 쿼리를 입력하여 짧은 랜덤 링크를 생성하고 관리할 수 있습니다.
         </div>
 
         <!-- 대시보드 카운트 섹션 -->
@@ -90,13 +90,6 @@ export const initRewardMgmtLinkPage = (container) => {
                 <button type="button" id="add-query-btn" style="margin-top: 10px; padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">+ 추가</button>
             </div>
             <div class="form-group" style="margin-top: 15px;">
-                <label>Acq <span style="color: red;">*</span></label>
-                <div id="acq-list" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-                    <!-- 동적으로 추가되는 acq 입력 필드들 -->
-                </div>
-                <button type="button" id="add-acq-btn" style="margin-top: 10px; padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">+ 추가</button>
-            </div>
-            <div class="form-group" style="margin-top: 15px;">
                 <button id="link-create-all-btn" class="btn-register" style="width: 100%; padding: 12px; font-size: 16px; font-weight: bold;">
                     모든 조합으로 랜덤 링크 생성
                 </button>
@@ -108,8 +101,8 @@ export const initRewardMgmtLinkPage = (container) => {
   sm=mtp_sug.top&
   where=m&
   query={랜덤 선택된 query}&
-  ackey={영문숫자 8글자 랜덤}&
-  acq={랜덤 선택된 acq}&
+  ackey={소문자+숫자 8글자 랜덤}&
+  acq={acq 테이블에서 랜덤 선택}&
   acr={0~10 랜덤}&
   qdt=0</pre>
             </div>
@@ -125,14 +118,13 @@ export const initRewardMgmtLinkPage = (container) => {
                             <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">상품명</th>
                             <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">리디렉트 URL</th>
                             <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">쿼리</th>
-                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Acq</th>
                             <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">키워드 개수</th>
                             <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">작업</th>
                         </tr>
                     </thead>
                     <tbody id="link-list-tbody">
                         <tr>
-                            <td colspan="6" style="padding: 20px; text-align: center; color: #666;">로딩 중...</td>
+                            <td colspan="5" style="padding: 20px; text-align: center; color: #666;">로딩 중...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -155,14 +147,6 @@ const initRewardMgmtLinkEvents = () => {
         });
     }
 
-    // Acq 추가 버튼
-    const addAcqBtn = document.getElementById('add-acq-btn');
-    if (addAcqBtn) {
-        addAcqBtn.addEventListener('click', () => {
-            addAcqRow();
-        });
-    }
-
     // 모든 조합으로 랜덤 링크 생성 버튼
     const createAllBtn = document.getElementById('link-create-all-btn');
     if (createAllBtn) {
@@ -175,26 +159,19 @@ const initRewardMgmtLinkEvents = () => {
             }
 
             const queries = getQueries();
-            const acqs = getAcqs();
             
             if (queries.length === 0) {
                 alert('최소 1개 이상의 쿼리를 추가해주세요.');
                 return;
             }
-            
-            if (acqs.length === 0) {
-                alert('최소 1개 이상의 acq를 추가해주세요.');
-                return;
-            }
 
-            // 백엔드에 query_list와 acq_list를 직접 전송 (백엔드가 모든 조합 생성)
-            await createAllLinks(productName, queries, acqs);
+            // 백엔드에 query_list만 전송 (백엔드가 acq 테이블에서 acq를 가져와 모든 조합 생성)
+            await createAllLinks(productName, queries);
         });
     }
 
     // 초기 입력창 하나씩 추가
     addQueryRow();
-    addAcqRow();
 };
 
 // 쿼리 행 추가 함수
@@ -221,30 +198,6 @@ const addQueryRow = () => {
     });
 };
 
-// Acq 행 추가 함수
-const addAcqRow = () => {
-    const container = document.getElementById('acq-list');
-    if (!container) return;
-
-    const rowId = `acq_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    const row = document.createElement('div');
-    row.className = 'acq-row';
-    row.setAttribute('data-row-id', rowId);
-    row.style.cssText = 'display: flex; gap: 10px; align-items: center; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px;';
-    
-    row.innerHTML = `
-        <input type="text" class="acq-input" placeholder="acq 키워드를 입력하세요" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;" required>
-        <button type="button" class="btn-remove-acq" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">X</button>
-    `;
-
-    container.appendChild(row);
-
-    // 삭제 버튼 이벤트
-    row.querySelector('.btn-remove-acq').addEventListener('click', () => {
-        row.remove();
-    });
-};
-
 // 입력된 쿼리 목록 가져오기
 const getQueries = () => {
     const rows = document.querySelectorAll('.query-row');
@@ -260,55 +213,46 @@ const getQueries = () => {
     return queries;
 };
 
-// 입력된 Acq 목록 가져오기
-const getAcqs = () => {
-    const rows = document.querySelectorAll('.acq-row');
-    const acqs = [];
-    
-    rows.forEach(row => {
-        const acq = row.querySelector('.acq-input').value.trim();
-        if (acq) {
-            acqs.push(acq);
-        }
-    });
-    
-    return acqs;
-};
-
 // 띄어쓰기를 +로 변환하는 헬퍼 함수
 const replaceSpaceWithPlus = (str) => {
     if (!str || str === '-') return str;
     return str.replace(/\s+/g, '+');
 };
 
-// 네이버 URL 생성 함수
-const generateNaverUrl = (query, acq) => {
+// 네이버 URL 생성 함수 (acq는 백엔드에서 가져옴)
+const generateNaverUrl = (query, acq = '') => {
     const ackey = generateRandomString(8);
     const acr = generateRandomNumber(0, 10);
     
     // 띄어쓰기를 +로 변환
     const queryWithPlus = query.replace(/\s+/g, '+');
-    const acqWithPlus = acq.replace(/\s+/g, '+');
     
     // encodeURIComponent를 사용하되, +는 인코딩하지 않도록 처리
     // encodeURIComponent는 +를 %2B로 변환하므로, 다시 +로 복원
     const encodedQuery = encodeURIComponent(queryWithPlus).replace(/%2B/g, '+');
-    const encodedAcq = encodeURIComponent(acqWithPlus).replace(/%2B/g, '+');
+    
+    // acq가 있으면 포함, 없으면 백엔드에서 가져온 값 사용
+    let acqParam = '';
+    if (acq) {
+        const acqWithPlus = acq.replace(/\s+/g, '+');
+        const encodedAcq = encodeURIComponent(acqWithPlus).replace(/%2B/g, '+');
+        acqParam = `&acq=${encodedAcq}`;
+    }
     
     const naverUrl = `https://m.search.naver.com/search.naver?` +
         `sm=mtp_sug.top&` +
         `where=m&` +
         `query=${encodedQuery}&` +
-        `ackey=${ackey}&` +
-        `acq=${encodedAcq}&` +
-        `acr=${acr}&` +
+        `ackey=${ackey}` +
+        `${acqParam}` +
+        `&acr=${acr}&` +
         `qdt=0`;
     
     return naverUrl;
 };
 
 // 모든 조합으로 랜덤 링크 생성
-const createAllLinks = async (productName, queryList, acqList) => {
+const createAllLinks = async (productName, queryList) => {
     try {
         // 입력값 검증
         if (!queryList || queryList.length === 0) {
@@ -316,34 +260,26 @@ const createAllLinks = async (productName, queryList, acqList) => {
             return;
         }
 
-        if (!acqList || acqList.length === 0) {
-            alert('최소 1개 이상의 acq를 입력해주세요.');
-            return;
-        }
-
         // 중복 제거 및 공백 제거
         const uniqueQueries = [...new Set(queryList.map(q => q.trim()).filter(q => q))];
-        const uniqueAcqs = [...new Set(acqList.map(a => a.trim()).filter(a => a))];
 
-        if (uniqueQueries.length === 0 || uniqueAcqs.length === 0) {
-            alert('유효한 쿼리와 acq를 입력해주세요.');
+        if (uniqueQueries.length === 0) {
+            alert('유효한 쿼리를 입력해주세요.');
             return;
         }
 
-        // 백엔드 API 호출 - query_list와 acq_list 전송
-        // 백엔드는 이를 받아서 모든 조합을 생성하고, 각 조합마다 별도의 link_id를 생성함
+        // 백엔드 API 호출 - query_list만 전송
+        // 백엔드는 acq 테이블에서 acq를 가져와서 모든 조합을 생성하고, 각 조합마다 별도의 link_id를 생성함
         const url = `${API_BASE_URL}/rewards/links`;
         const requestBody = {
             product_name: productName,
-            query_list: uniqueQueries,  // 쿼리 리스트
-            acq_list: uniqueAcqs        // acq 리스트
+            query_list: uniqueQueries  // 쿼리 리스트만 전송
         };
 
         console.log('링크 생성 API 호출:', url);
         console.log('요청 본문:', JSON.stringify(requestBody, null, 2));
-        console.log(`쿼리 개수: ${uniqueQueries.length}, Acq 개수: ${uniqueAcqs.length}`);
-        console.log(`예상 조합 개수: ${uniqueQueries.length * uniqueAcqs.length}개`);
-        console.log(`백엔드가 각 조합마다 별도의 link_id를 생성합니다.`);
+        console.log(`쿼리 개수: ${uniqueQueries.length}`);
+        console.log(`백엔드가 acq 테이블에서 acq를 가져와 모든 조합을 생성합니다.`);
 
         const response = await fetch(url, {
             method: 'POST',
@@ -360,8 +296,7 @@ const createAllLinks = async (productName, queryList, acqList) => {
             const shortCode = responseData.short_code;
             const baseUrl = window.location.origin;
             const redirectLink = `${baseUrl}/redirect/${shortCode}`;
-            const expectedCount = uniqueQueries.length * uniqueAcqs.length;
-            const createdCount = responseData.created_count || expectedCount;
+            const createdCount = responseData.created_count || 0;
             const createdLinks = responseData.links || [];
             
             console.log('생성된 링크 상세 정보:', createdLinks);
@@ -381,9 +316,7 @@ const createAllLinks = async (productName, queryList, acqList) => {
             // 입력 필드 초기화
             document.getElementById('link-product-name').value = '';
             document.getElementById('query-list').innerHTML = '';
-            document.getElementById('acq-list').innerHTML = '';
             addQueryRow(); // 빈 행 하나 추가
-            addAcqRow(); // 빈 행 하나 추가
             
             // 목록 새로고침
             loadLinkList();
@@ -422,14 +355,14 @@ const createAllLinks = async (productName, queryList, acqList) => {
 };
 
 // 새 링크 생성 (단일 조합용 - 호환성 유지)
-const createNewLink = async (productName, query, acq) => {
+const createNewLink = async (productName, query) => {
     try {
         const shortLink = generateShortLink();
         const baseUrl = window.location.origin;
         const redirectLink = `${baseUrl}/redirect/${shortLink}`;
         
-        // 네이버 URL 형식으로 생성
-        const naverUrl = generateNaverUrl(query, acq);
+        // 네이버 URL 형식으로 생성 (acq는 백엔드에서 가져옴)
+        const naverUrl = generateNaverUrl(query);
 
         // 백엔드 API 호출 (예상 엔드포인트: POST /rewards/links)
         const url = `${API_BASE_URL}/rewards/links`;
@@ -438,8 +371,8 @@ const createNewLink = async (productName, query, acq) => {
             product_name: productName,
             redirect_url: naverUrl, // 네이버 URL 형식으로 저장
             keywords: [{
-                query: query,
-                acq: acq
+                query: query
+                // acq는 백엔드에서 acq 테이블에서 가져옴
             }]
         };
 
@@ -460,7 +393,6 @@ const createNewLink = async (productName, query, acq) => {
             // 입력 필드 초기화
             document.getElementById('link-product-name').value = '';
             document.getElementById('link-query-input').value = '';
-            document.getElementById('link-acq-input').value = '';
             
             // 목록 새로고침
             loadLinkList();
@@ -691,10 +623,9 @@ const renderLinkList = (links) => {
         // 리다이렉트 URL은 항상 short code 기반으로 생성
         const redirectLink = `${baseUrl}/redirect/${shortCode}`;
         
-        // 첫 번째 키워드 조합의 query와 acq 표시 (대표값)
+        // 첫 번째 키워드 조합의 query 표시 (대표값)
         const firstKeyword = keywords.length > 0 ? keywords[0] : null;
         const displayQuery = firstKeyword ? (firstKeyword.query_keyword || firstKeyword.query || '-') : '-';
-        const displayAcq = firstKeyword ? (firstKeyword.acq_keyword || firstKeyword.acq || '-') : '-';
         
         return `
             <tr class="link-item" data-short-code="${shortCode}" style="border-bottom: 1px solid #ddd;">
@@ -711,7 +642,6 @@ const renderLinkList = (links) => {
                     </div>
                 </td>
                 <td style="padding: 12px; border: 1px solid #ddd;">${displayQuery}</td>
-                <td style="padding: 12px; border: 1px solid #ddd;">${displayAcq}</td>
                 <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${keywords.length}개</td>
                 <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">
                     <div style="display: flex; gap: 5px; justify-content: center;">
@@ -721,7 +651,7 @@ const renderLinkList = (links) => {
                 </td>
             </tr>
             <tr class="keyword-detail-row" data-short-code="${shortCode}" style="display: none; background: #f8f9fa;">
-                <td colspan="6" style="padding: 20px; border: 1px solid #ddd;">
+                <td colspan="5" style="padding: 20px; border: 1px solid #ddd;">
                     <div style="margin-bottom: 10px;">
                         <strong>Short Code: </strong>
                         <span style="color: #007bff; font-family: monospace; font-weight: bold;">${shortCode}</span>
@@ -738,7 +668,6 @@ const renderLinkList = (links) => {
                             <tr style="background: #e9ecef; border-bottom: 2px solid #ddd;">
                                 <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">번호</th>
                                 <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">쿼리 (Query)</th>
-                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Acq</th>
                                 <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">네이버 URL</th>
                             </tr>
                         </thead>
@@ -746,17 +675,15 @@ const renderLinkList = (links) => {
                             ${keywords.length > 0 ? keywords.map((keyword, kwIndex) => {
                                 // 화면 표시는 원본 값 사용 (띄어쓰기 그대로)
                                 const query = keyword.query_keyword || keyword.query || '';
-                                const acq = keyword.acq_keyword || keyword.acq || '';
                                 const keywordId = keyword.keyword_id || '';
                                 // 각 키워드가 속한 link_id 사용 (firstLinkId 대신)
                                 const keywordLinkId = keyword.link_id || (link.link_ids && link.link_ids.length > 0 ? link.link_ids[0] : null);
-                                // 네이버 URL은 generateNaverUrl 내부에서 띄어쓰기를 +로 변환
-                                const keywordNaverUrl = generateNaverUrl(query, acq);
+                                // 네이버 URL은 백엔드에서 생성된 reward_link 사용 (acq는 백엔드에서 가져옴)
+                                const keywordNaverUrl = keyword.reward_link || generateNaverUrl(query);
                                 return `
                                     <tr style="border-bottom: 1px solid #ddd;">
                                         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${kwIndex + 1}</td>
                                         <td style="padding: 10px; border: 1px solid #ddd;">${query}</td>
-                                        <td style="padding: 10px; border: 1px solid #ddd;">${acq}</td>
                                         <td style="padding: 10px; border: 1px solid #ddd;">
                                             <div style="display: flex; align-items: center; gap: 5px;">
                                                 <input type="text" value="${keywordNaverUrl}" readonly style="flex: 1; padding: 4px; border: 1px solid #ddd; border-radius: 4px; background: #f5f5f5; font-size: 11px; font-family: monospace;">
@@ -766,7 +693,7 @@ const renderLinkList = (links) => {
                                         </td>
                                     </tr>
                                 `;
-                            }).join('') : '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #666;">등록된 키워드 조합이 없습니다.</td></tr>'}
+                            }).join('') : '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #666;">등록된 키워드 조합이 없습니다.</td></tr>'}
                         </tbody>
                     </table>
                 </td>
@@ -912,13 +839,11 @@ const showKeywordModal = (link) => {
                     const kwId = keyword.keyword_id || kwIndex;
                     // 모달 input은 수정 가능하므로 원본 값 사용
                     const query = keyword.query_keyword || keyword.query || '';
-                    const acq = keyword.acq_keyword || keyword.acq || '';
                     // 각 키워드의 link_id 사용 (firstLinkId 대신)
                     const keywordLinkId = keyword.link_id || firstLinkId;
                     return `
                         <div class="keyword-item" data-keyword-id="${kwId}" style="display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
                             <input type="text" class="keyword-query" value="${query}" placeholder="query 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
-                            <input type="text" class="keyword-acq" value="${acq}" placeholder="acq 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
                             <button class="btn-save-keyword" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
                             <button class="btn-delete-keyword" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
                         </div>
@@ -957,10 +882,9 @@ const showKeywordModal = (link) => {
             const keywordId = btn.getAttribute('data-keyword-id');
             const keywordItem = btn.closest('.keyword-item');
             const query = keywordItem.querySelector('.keyword-query').value.trim();
-            const acq = keywordItem.querySelector('.keyword-acq').value.trim();
             
-            if (!query || !acq) {
-                alert('query와 acq 키워드를 모두 입력해주세요.');
+            if (!query) {
+                alert('query 키워드를 입력해주세요.');
                 return;
             }
             
@@ -969,7 +893,7 @@ const showKeywordModal = (link) => {
                 return;
             }
 
-            await saveKeyword(linkId, keywordId, query, acq);
+            await saveKeyword(linkId, keywordId, query);
             document.body.removeChild(modal);
             loadLinkList();
         });
@@ -1006,7 +930,6 @@ const addKeywordRow = (shortCode, linkId, modal) => {
     keywordRow.style.cssText = 'display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px;';
     keywordRow.innerHTML = `
         <input type="text" class="keyword-query" value="" placeholder="query 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
-        <input type="text" class="keyword-acq" value="" placeholder="acq 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
         <button class="btn-save-keyword" data-link-id="${linkId}" data-keyword-id="${newKeywordId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
         <button class="btn-delete-keyword" data-link-id="${linkId}" data-keyword-id="${newKeywordId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
     `;
@@ -1016,14 +939,13 @@ const addKeywordRow = (shortCode, linkId, modal) => {
     // 새로 추가된 행의 이벤트 바인딩
     keywordRow.querySelector('.btn-save-keyword').addEventListener('click', async (e) => {
         const query = keywordRow.querySelector('.keyword-query').value.trim();
-        const acq = keywordRow.querySelector('.keyword-acq').value.trim();
         
-        if (!query || !acq) {
-            alert('query와 acq 키워드를 모두 입력해주세요.');
+        if (!query) {
+            alert('query 키워드를 입력해주세요.');
             return;
         }
 
-        await saveKeyword(linkId, newKeywordId, query, acq);
+        await saveKeyword(linkId, newKeywordId, query);
         if (modal) {
             document.body.removeChild(modal);
         }
@@ -1036,7 +958,7 @@ const addKeywordRow = (shortCode, linkId, modal) => {
 };
 
 // 키워드 저장
-const saveKeyword = async (linkId, keywordId, query, acq) => {
+const saveKeyword = async (linkId, keywordId, query) => {
     try {
         // 새 키워드인 경우
         const isNew = keywordId.toString().startsWith('new_');
@@ -1046,9 +968,15 @@ const saveKeyword = async (linkId, keywordId, query, acq) => {
 
         const method = isNew ? 'POST' : 'PUT';
         const requestBody = {
-            query: query,
-            acq: acq
+            query: query
+            // acq는 백엔드에서 acq 테이블에서 가져옴
         };
+        
+        // 기존 키워드 수정 시 새로운 네이버 URL 생성 (ackey 소문자+숫자로 생성)
+        if (!isNew) {
+            const newNaverUrl = generateNaverUrl(query);
+            requestBody.reward_link = newNaverUrl;
+        }
 
         console.log('키워드 저장 API 호출:', url, method, requestBody);
 

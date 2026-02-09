@@ -275,17 +275,32 @@ const getAcqs = () => {
     return acqs;
 };
 
+// 띄어쓰기를 +로 변환하는 헬퍼 함수
+const replaceSpaceWithPlus = (str) => {
+    if (!str || str === '-') return str;
+    return str.replace(/\s+/g, '+');
+};
+
 // 네이버 URL 생성 함수
 const generateNaverUrl = (query, acq) => {
     const ackey = generateRandomString(8);
     const acr = generateRandomNumber(0, 10);
     
+    // 띄어쓰기를 +로 변환
+    const queryWithPlus = query.replace(/\s+/g, '+');
+    const acqWithPlus = acq.replace(/\s+/g, '+');
+    
+    // encodeURIComponent를 사용하되, +는 인코딩하지 않도록 처리
+    // encodeURIComponent는 +를 %2B로 변환하므로, 다시 +로 복원
+    const encodedQuery = encodeURIComponent(queryWithPlus).replace(/%2B/g, '+');
+    const encodedAcq = encodeURIComponent(acqWithPlus).replace(/%2B/g, '+');
+    
     const naverUrl = `https://m.search.naver.com/search.naver?` +
         `sm=mtp_sug.top&` +
         `where=m&` +
-        `query=${encodeURIComponent(query)}&` +
+        `query=${encodedQuery}&` +
         `ackey=${ackey}&` +
-        `acq=${encodeURIComponent(acq)}&` +
+        `acq=${encodedAcq}&` +
         `acr=${acr}&` +
         `qdt=0`;
     
@@ -729,12 +744,13 @@ const renderLinkList = (links) => {
                         </thead>
                         <tbody>
                             ${keywords.length > 0 ? keywords.map((keyword, kwIndex) => {
+                                // 화면 표시는 원본 값 사용 (띄어쓰기 그대로)
                                 const query = keyword.query_keyword || keyword.query || '';
                                 const acq = keyword.acq_keyword || keyword.acq || '';
                                 const keywordId = keyword.keyword_id || '';
                                 // 각 키워드가 속한 link_id 사용 (firstLinkId 대신)
                                 const keywordLinkId = keyword.link_id || (link.link_ids && link.link_ids.length > 0 ? link.link_ids[0] : null);
-                                // 네이버 URL은 acq와 keyword(query)를 조합한 네이버 URL 사용
+                                // 네이버 URL은 generateNaverUrl 내부에서 띄어쓰기를 +로 변환
                                 const keywordNaverUrl = generateNaverUrl(query, acq);
                                 return `
                                     <tr style="border-bottom: 1px solid #ddd;">
@@ -894,6 +910,7 @@ const showKeywordModal = (link) => {
             <div class="keyword-list" id="keyword-list-${shortCode}">
                 ${keywords.length > 0 ? keywords.map((keyword, kwIndex) => {
                     const kwId = keyword.keyword_id || kwIndex;
+                    // 모달 input은 수정 가능하므로 원본 값 사용
                     const query = keyword.query_keyword || keyword.query || '';
                     const acq = keyword.acq_keyword || keyword.acq || '';
                     // 각 키워드의 link_id 사용 (firstLinkId 대신)

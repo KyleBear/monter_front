@@ -903,7 +903,7 @@ const showKeywordModal = (link) => {
                 <strong>Short Code: </strong><span style="font-family: monospace; font-weight: bold;">${shortCode}</span>
             </div>
             
-            <div style="margin-bottom: 15px; display: none;">
+            <div style="margin-bottom: 15px;">
                 <button class="btn-add-keyword" data-short-code="${shortCode}" data-link-id="${firstLinkId}" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">+ 키워드 추가</button>
             </div>
             
@@ -942,11 +942,11 @@ const showKeywordModal = (link) => {
         }
     });
     
-    // 키워드 추가 버튼 (숨김 처리됨)
+    // 키워드 추가 버튼
     const addKeywordBtn = modal.querySelector('.btn-add-keyword');
     if (addKeywordBtn && firstLinkId) {
         addKeywordBtn.addEventListener('click', () => {
-            addKeywordRow(firstLinkId, modal);
+            addKeywordRow(shortCode, firstLinkId, modal);
         });
     }
     
@@ -995,8 +995,8 @@ const showKeywordModal = (link) => {
 };
 
 // 키워드 행 추가
-const addKeywordRow = (linkId, modal) => {
-    const keywordList = document.getElementById(`keyword-list-${linkId}`);
+const addKeywordRow = (shortCode, linkId, modal) => {
+    const keywordList = document.getElementById(`keyword-list-${shortCode}`);
     if (!keywordList) return;
 
     const newKeywordId = `new_${Date.now()}`;

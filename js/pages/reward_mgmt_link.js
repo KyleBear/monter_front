@@ -103,7 +103,7 @@ export const initRewardMgmtLinkPage = (container) => {
   query={랜덤 선택된 query}&
   ackey={소문자+숫자 8글자 랜덤}&
   acq={acq 테이블에서 랜덤 선택}&
-  acr={0~10 랜덤}&
+  acr={1~10 랜덤}&
   qdt=0</pre>
             </div>
         </div>

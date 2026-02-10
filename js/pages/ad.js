@@ -66,7 +66,7 @@ const renderAdTable = (ads) => {
         return `
             <tr data-ad-id="${ad.ad_id || ad.id}">
                 <td class="checkbox-col"><input type="checkbox" class="row-check"></td>
-                <td>${index + 1}</td>
+                <td>${ad.ad_id || ad.id}</td>
                 <td>${ad.username || ad.userid || '-'}</td>
                 <td><span style="color: ${status.color};">${status.text}</span></td>
                 <td>${ad.main_keyword || '-'}</td>
@@ -365,7 +365,7 @@ export const initAdPage = (container) => {
                 <thead>
                     <tr>
                         <th class="checkbox-col"><input type="checkbox" id="select-all"></th>
-                        <th>No</th>
+                        <th>슬롯ID</th>
                         <th>아이디</th>
                         <th>상태</th>
                         <th>메인키워드</th>

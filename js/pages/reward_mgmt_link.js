@@ -40,6 +40,25 @@ const generateRandomNumber = (min = 0, max = 10) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
+// HTML 이스케이프 헬퍼 함수 (XSS 방지)
+const escapeHtml = (text) => {
+    if (text == null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+};
+
+// 속성값 이스케이프 (data-* 속성용)
+const escapeAttr = (text) => {
+    if (text == null || text === undefined) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+};
+
 export const initRewardMgmtLinkPage = (container) => {
     // 관리자 권한 체크
     const userRole = sessionStorage.getItem('userRole');
@@ -873,12 +892,20 @@ const showKeywordModal = (link) => {
                         const query = keyword.query_keyword || keyword.query || '';
                         // 각 키워드의 link_id 사용 (firstLinkId 대신)
                         const keywordLinkId = keyword.link_id || firstLinkId;
+                        
+                        // 이스케이프 처리
+                        const escapedQuery = escapeHtml(query);
+                        const escapedKwId = escapeAttr(String(kwId));
+                        const escapedLinkId = keywordLinkId ? escapeAttr(String(keywordLinkId)) : '';
+                        const escapedOriginalQuery = escapeAttr(query);
+                        const escapedShortCode = escapeAttr(shortCode);
+                        
                     return `
-                        <div class="keyword-item" data-keyword-id="${kwId}" style="display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; align-items: center;">
-                            <input type="checkbox" class="keyword-checkbox" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="margin-right: 5px;">
-                            <input type="text" class="keyword-query" value="${query}" placeholder="query 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
-                            <button class="btn-save-keyword" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
-                            <button class="btn-delete-keyword" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
+                        <div class="keyword-item" data-keyword-id="${escapedKwId}" data-original-query="${escapedOriginalQuery}" style="display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; align-items: center;">
+                            <input type="checkbox" class="keyword-checkbox" data-link-id="${escapedLinkId}" data-keyword-id="${escapedKwId}" style="margin-right: 5px;">
+                            <input type="text" class="keyword-query" value="${escapedQuery}" placeholder="query 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                            <button class="btn-save-keyword" data-short-code="${escapedShortCode}" data-link-id="${escapedLinkId}" data-keyword-id="${escapedKwId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
+                            <button class="btn-delete-keyword" data-short-code="${escapedShortCode}" data-link-id="${escapedLinkId}" data-keyword-id="${escapedKwId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
                         </div>
                     `;
                     }).join('');
@@ -1119,19 +1146,32 @@ const showKeywordModal = (link) => {
 
 // 키워드 행 추가
 const addKeywordRow = (shortCode, linkId, modal) => {
-    const keywordList = document.getElementById(`keyword-list-${shortCode}`);
+    const keywordList = document.getElementById(`keyword-list-${escapeAttr(shortCode)}`);
     if (!keywordList) return;
+
+    // linkId 유효성 검사
+    if (!linkId || linkId === 'null' || linkId === 'undefined' || linkId === '') {
+        alert('링크 ID가 유효하지 않습니다. 새 키워드를 추가할 수 없습니다.');
+        console.error('유효하지 않은 linkId:', linkId, 'shortCode:', shortCode);
+        return;
+    }
 
     const newKeywordId = `new_${Date.now()}`;
     const keywordRow = document.createElement('div');
     keywordRow.className = 'keyword-item';
     keywordRow.setAttribute('data-keyword-id', newKeywordId);
+    keywordRow.setAttribute('data-original-query', ''); // 새 키워드는 원본 값 없음
     keywordRow.style.cssText = 'display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; align-items: center;';
+    
+    const escapedShortCode = escapeAttr(shortCode);
+    const escapedLinkId = escapeAttr(String(linkId));
+    const escapedNewKeywordId = escapeAttr(newKeywordId);
+    
     keywordRow.innerHTML = `
-        <input type="checkbox" class="keyword-checkbox" data-link-id="${linkId}" data-keyword-id="${newKeywordId}" style="margin-right: 5px;">
+        <input type="checkbox" class="keyword-checkbox" data-link-id="${escapedLinkId}" data-keyword-id="${escapedNewKeywordId}" style="margin-right: 5px;">
         <input type="text" class="keyword-query" value="" placeholder="query 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
-        <button class="btn-save-keyword" data-short-code="${shortCode}" data-link-id="${linkId}" data-keyword-id="${newKeywordId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
-        <button class="btn-delete-keyword" data-link-id="${linkId}" data-keyword-id="${newKeywordId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
+        <button class="btn-save-keyword" data-short-code="${escapedShortCode}" data-link-id="${escapedLinkId}" data-keyword-id="${escapedNewKeywordId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
+        <button class="btn-delete-keyword" data-short-code="${escapedShortCode}" data-link-id="${escapedLinkId}" data-keyword-id="${escapedNewKeywordId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
     `;
 
     keywordList.appendChild(keywordRow);
@@ -1289,22 +1329,32 @@ const deleteKeyword = async (linkId, keywordId) => {
     }
 };
 
-// 모달 내부 키워드 목록만 새로고침
+// 모달 내부 키워드 목록만 새로고침 (모달 열 때와 동일한 방식으로 조회)
 const refreshKeywordModal = async (shortCode, modal) => {
     try {
-        // 링크 목록 다시 로드
-        const response = await fetch(`${API_BASE_URL}/rewards/links?short_code=${shortCode}`, {
+        // 전체 링크 목록을 조회 (모달 열 때와 동일한 방식)
+        const response = await fetch(`${API_BASE_URL}/rewards/links`, {
             headers: getAuthHeaders()
         });
         
         if (response.ok) {
             const data = await response.json();
-            const links = data.data?.links || data.links || [];
-            const link = links.find(l => l.short_code === shortCode);
+            let links = [];
+            if (data.data && data.data.links && Array.isArray(data.data.links)) {
+                links = data.data.links;
+            } else if (data.links && Array.isArray(data.links)) {
+                links = data.links;
+            } else if (Array.isArray(data)) {
+                links = data;
+            }
+            
+            // short_code별로 그룹화 (모달 열 때와 동일한 방식)
+            const groupedLinks = groupLinksByShortCode(links);
+            const link = groupedLinks.find(l => l.short_code === shortCode);
             
             if (link) {
                 // 키워드 리스트 영역만 업데이트
-                const keywordList = modal.querySelector(`#keyword-list-${shortCode}`);
+                const keywordList = modal.querySelector(`#keyword-list-${escapeAttr(shortCode)}`);
                 if (keywordList) {
                     let keywords = link.keywords || [];
                     // keyword_id로 순차 정렬
@@ -1318,13 +1368,24 @@ const refreshKeywordModal = async (shortCode, modal) => {
                     keywordList.innerHTML = keywords.length > 0 ? keywords.map((keyword, kwIndex) => {
                         const kwId = keyword.keyword_id || kwIndex;
                         const query = keyword.query_keyword || keyword.query || '';
-                        const keywordLinkId = keyword.link_id || firstLinkId;
+                        // link_id가 null이거나 유효하지 않으면 firstLinkId 사용
+                        const keywordLinkId = (keyword.link_id && keyword.link_id !== null && keyword.link_id !== 'null') 
+                            ? keyword.link_id 
+                            : (firstLinkId && firstLinkId !== null && firstLinkId !== 'null' ? firstLinkId : null);
+                        
+                        // 이스케이프 처리
+                        const escapedQuery = escapeHtml(query);
+                        const escapedKwId = escapeAttr(String(kwId));
+                        const escapedLinkId = keywordLinkId ? escapeAttr(String(keywordLinkId)) : '';
+                        const escapedOriginalQuery = escapeAttr(query); // DB에서 가져온 원본 값
+                        const escapedShortCode = escapeAttr(shortCode);
+                        
                         return `
-                            <div class="keyword-item" data-keyword-id="${kwId}" style="display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; align-items: center;">
-                                <input type="checkbox" class="keyword-checkbox" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="margin-right: 5px;">
-                                <input type="text" class="keyword-query" value="${query}" placeholder="query 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
-                                <button class="btn-save-keyword" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
-                                <button class="btn-delete-keyword" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
+                            <div class="keyword-item" data-keyword-id="${escapedKwId}" data-original-query="${escapedOriginalQuery}" style="display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; align-items: center;">
+                                <input type="checkbox" class="keyword-checkbox" data-link-id="${escapedLinkId}" data-keyword-id="${escapedKwId}" style="margin-right: 5px;">
+                                <input type="text" class="keyword-query" value="${escapedQuery}" placeholder="query 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                                <button class="btn-save-keyword" data-short-code="${escapedShortCode}" data-link-id="${escapedLinkId}" data-keyword-id="${escapedKwId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
+                                <button class="btn-delete-keyword" data-short-code="${escapedShortCode}" data-link-id="${escapedLinkId}" data-keyword-id="${escapedKwId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
                             </div>
                         `;
                     }).join('') : '<p style="color: #666; font-size: 14px;">등록된 키워드 조합이 없습니다.</p>';
@@ -1335,7 +1396,11 @@ const refreshKeywordModal = async (shortCode, modal) => {
                     // 모든 모달 버튼 이벤트도 다시 바인딩
                     bindAllModalButtonEvents(modal, shortCode, firstLinkId);
                 }
+            } else {
+                console.warn(`Short code ${shortCode}에 해당하는 링크를 찾을 수 없습니다.`);
             }
+        } else {
+            console.error('링크 목록 조회 실패:', response.status);
         }
     } catch (error) {
         console.error('모달 새로고침 오류:', error);
@@ -1436,78 +1501,90 @@ const bindAllModalButtonEvents = (modal, shortCode, firstLinkId) => {
         
         newSaveAllBtn.addEventListener('click', async () => {
             const keywordItems = modal.querySelectorAll('.keyword-item');
-            const keywordsToSave = [];
+            const keywordsToSave = []; // 변경된 기존 키워드
+            const newKeywordsToSave = []; // 새로 추가된 키워드
             
             for (const item of keywordItems) {
                 const query = item.querySelector('.keyword-query').value.trim();
                 if (!query) continue;
                 
                 const keywordId = item.getAttribute('data-keyword-id');
+                const originalQuery = item.getAttribute('data-original-query') || '';
+                const linkId = item.querySelector('.keyword-checkbox')?.getAttribute('data-link-id');
                 
-                // 새 키워드(new_로 시작)는 제외 (개별 저장 필요)
-                if (keywordId && !keywordId.toString().startsWith('new_')) {
-                    keywordsToSave.push({
-                        keyword_id: parseInt(keywordId, 10),
-                        query: query
-                    });
+                // 새 키워드(new_로 시작)
+                if (keywordId && keywordId.toString().startsWith('new_')) {
+                    if (linkId && linkId !== 'null' && linkId !== '' && linkId !== 'undefined') {
+                        newKeywordsToSave.push({
+                            linkId: linkId,
+                            keywordId: keywordId,
+                            query: query
+                        });
+                    }
+                } else {
+                    // 기존 키워드 - 변경된 것만 저장
+                    if (query !== originalQuery) {
+                        keywordsToSave.push({
+                            keyword_id: parseInt(keywordId, 10),
+                            query: query
+                        });
+                    }
                 }
             }
             
-            if (keywordsToSave.length === 0) {
-                alert('저장할 키워드가 없습니다.');
+            // 저장할 항목이 없으면 알림
+            if (keywordsToSave.length === 0 && newKeywordsToSave.length === 0) {
+                alert('변경되거나 추가된 키워드가 없습니다.');
                 return;
             }
             
             try {
-                console.log('배치 저장 요청 (PATCH):', keywordsToSave);
+                const savePromises = [];
                 
-                // PATCH 배치 저장 API 호출
-                const response = await fetch(`${API_BASE_URL}/rewards/keywords/batch`, {
-                    method: 'PATCH',
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({
-                        keywords: keywordsToSave
-                    })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('배치 저장 성공:', data);
+                // 1. 변경된 기존 키워드 배치 저장
+                if (keywordsToSave.length > 0) {
+                    console.log('배치 저장 요청 (PATCH) - 변경된 키워드:', keywordsToSave);
                     
-                    const savedCount = data.data?.saved_count || data.saved_count || keywordsToSave.length;
-                    const failedCount = data.data?.failed_count || 0;
-                    
-                    if (failedCount > 0) {
-                        alert(`${savedCount}개 저장 성공, ${failedCount}개 실패`);
-                    } else {
-                        alert(`${savedCount}개의 키워드가 저장되었습니다.`);
-                    }
-                    
-                    // 백엔드 반영 시간 확보를 위한 지연 후 모달 내부만 업데이트
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                    await refreshKeywordModal(shortCode, modal);
-                } else {
-                    let errorMessage = `서버 오류 (${response.status})`;
-                    try {
-                        const errorText = await response.text();
-                        if (errorText) {
-                            try {
-                                const errorData = JSON.parse(errorText);
-                                errorMessage = errorData.detail || errorData.message || errorText;
-                            } catch (e) {
-                                errorMessage = errorText;
+                    savePromises.push(
+                        fetch(`${API_BASE_URL}/rewards/keywords/batch`, {
+                            method: 'PATCH',
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({
+                                keywords: keywordsToSave
+                            })
+                        }).then(response => {
+                            if (!response.ok) {
+                                throw new Error(`배치 저장 실패: ${response.status}`);
                             }
-                        }
-                    } catch (e) {
-                        console.error('오류 메시지 파싱 실패:', e);
-                    }
-                    
-                    console.error('배치 저장 실패:', response.status, errorMessage);
-                    alert(`키워드 저장 실패: ${errorMessage}`);
+                            return response.json();
+                        })
+                    );
                 }
+                
+                // 2. 새로 추가된 키워드 개별 저장
+                for (const newKeyword of newKeywordsToSave) {
+                    console.log('새 키워드 저장:', newKeyword);
+                    
+                    savePromises.push(
+                        saveKeyword(newKeyword.linkId, newKeyword.keywordId, newKeyword.query, shortCode, modal, false)
+                    );
+                }
+                
+                // 모든 저장 작업 실행
+                const results = await Promise.all(savePromises);
+                
+                const updatedCount = keywordsToSave.length;
+                const newCount = newKeywordsToSave.length;
+                const totalCount = updatedCount + newCount;
+                
+                alert(`${totalCount}개의 키워드가 저장되었습니다.\n- 변경된 키워드: ${updatedCount}개\n- 새로 추가된 키워드: ${newCount}개`);
+                
+                // 백엔드 반영 시간 확보를 위한 지연 후 모달 내부만 업데이트
+                await new Promise(resolve => setTimeout(resolve, 300));
+                await refreshKeywordModal(shortCode, modal);
             } catch (error) {
                 console.error('일괄 저장 오류:', error);
-                alert('일괄 저장 중 오류가 발생했습니다.');
+                alert(`일괄 저장 중 오류가 발생했습니다: ${error.message}`);
             }
         });
     }

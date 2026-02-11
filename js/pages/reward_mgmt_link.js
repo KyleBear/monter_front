@@ -87,7 +87,10 @@ export const initRewardMgmtLinkPage = (container) => {
                 <div id="query-list" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
                     <!-- 동적으로 추가되는 쿼리 입력 필드들 -->
                 </div>
-                <button type="button" id="add-query-btn" style="margin-top: 10px; padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">+ 추가</button>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="button" id="add-query-btn" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">+ 추가</button>
+                    <button type="button" id="bulk-create-link-btn" style="padding: 6px 12px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">+ 링크 다량 생성</button>
+                </div>
             </div>
             <div class="form-group" style="margin-top: 15px;">
                 <button id="link-create-all-btn" class="btn-register" style="width: 100%; padding: 12px; font-size: 16px; font-weight: bold;">
@@ -167,6 +170,14 @@ const initRewardMgmtLinkEvents = () => {
 
             // 백엔드에 query_list만 전송 (백엔드가 acq 테이블에서 acq를 가져와 모든 조합 생성)
             await createAllLinks(productName, queries);
+        });
+    }
+
+    // 링크 다량 생성 버튼
+    const bulkCreateLinkBtn = document.getElementById('bulk-create-link-btn');
+    if (bulkCreateLinkBtn) {
+        bulkCreateLinkBtn.addEventListener('click', () => {
+            showBulkCreateLinkModal();
         });
     }
 
@@ -672,28 +683,39 @@ const renderLinkList = (links) => {
                             </tr>
                         </thead>
                         <tbody>
-                            ${keywords.length > 0 ? keywords.map((keyword, kwIndex) => {
-                                // 화면 표시는 원본 값 사용 (띄어쓰기 그대로)
-                                const query = keyword.query_keyword || keyword.query || '';
-                                const keywordId = keyword.keyword_id || '';
-                                // 각 키워드가 속한 link_id 사용 (firstLinkId 대신)
-                                const keywordLinkId = keyword.link_id || (link.link_ids && link.link_ids.length > 0 ? link.link_ids[0] : null);
-                                // 네이버 URL은 백엔드에서 생성된 reward_link 사용 (acq는 백엔드에서 가져옴)
-                                const keywordNaverUrl = keyword.reward_link || generateNaverUrl(query);
-                                return `
-                                    <tr style="border-bottom: 1px solid #ddd;">
-                                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${kwIndex + 1}</td>
-                                        <td style="padding: 10px; border: 1px solid #ddd;">${query}</td>
-                                        <td style="padding: 10px; border: 1px solid #ddd;">
-                                            <div style="display: flex; align-items: center; gap: 5px;">
-                                                <input type="text" value="${keywordNaverUrl}" readonly style="flex: 1; padding: 4px; border: 1px solid #ddd; border-radius: 4px; background: #f5f5f5; font-size: 11px; font-family: monospace;">
-                                                <button class="btn-copy-keyword-url" data-url="${keywordNaverUrl}" style="padding: 4px 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">복사</button>
-                                                ${keywordId && keywordLinkId ? `<button class="btn-delete-keyword-from-table" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${keywordId}" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">삭제</button>` : ''}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                `;
-                            }).join('') : '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #666;">등록된 키워드 조합이 없습니다.</td></tr>'}
+                            ${(() => {
+                                if (keywords.length === 0) {
+                                    return '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #666;">등록된 키워드 조합이 없습니다.</td></tr>';
+                                }
+                                // keyword_id로 순차 정렬
+                                const sortedKeywords = [...keywords].sort((a, b) => {
+                                    const idA = a.keyword_id || 0;
+                                    const idB = b.keyword_id || 0;
+                                    return idA - idB;
+                                });
+                                return sortedKeywords.map((keyword, kwIndex) => {
+                                    // 화면 표시는 원본 값 사용 (띄어쓰기 그대로)
+                                    const query = keyword.query_keyword || keyword.query || '';
+                                    const keywordId = keyword.keyword_id || '';
+                                    // 각 키워드가 속한 link_id 사용 (firstLinkId 대신)
+                                    const keywordLinkId = keyword.link_id || (link.link_ids && link.link_ids.length > 0 ? link.link_ids[0] : null);
+                                    // 네이버 URL은 백엔드에서 생성된 reward_link 사용 (acq는 백엔드에서 가져옴)
+                                    const keywordNaverUrl = keyword.reward_link || generateNaverUrl(query);
+                                    return `
+                                        <tr style="border-bottom: 1px solid #ddd;">
+                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${kwIndex + 1}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd;">${query}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                                <div style="display: flex; align-items: center; gap: 5px;">
+                                                    <input type="text" value="${keywordNaverUrl}" readonly style="flex: 1; padding: 4px; border: 1px solid #ddd; border-radius: 4px; background: #f5f5f5; font-size: 11px; font-family: monospace;">
+                                                    <button class="btn-copy-keyword-url" data-url="${keywordNaverUrl}" style="padding: 4px 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">복사</button>
+                                                    ${keywordId && keywordLinkId ? `<button class="btn-delete-keyword-from-table" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${keywordId}" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">삭제</button>` : ''}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('');
+                            })()}
                         </tbody>
                     </table>
                 </td>
@@ -830,25 +852,37 @@ const showKeywordModal = (link) => {
                 <strong>Short Code: </strong><span style="font-family: monospace; font-weight: bold;">${shortCode}</span>
             </div>
             
-            <div style="margin-bottom: 15px;">
+            <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
                 <button class="btn-add-keyword" data-short-code="${shortCode}" data-link-id="${firstLinkId}" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">+ 키워드 추가</button>
+                <button class="btn-batch-delete-keywords" data-short-code="${shortCode}" style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">선택 삭제</button>
+                <button class="btn-save-all-keywords" data-short-code="${shortCode}" style="padding: 8px 15px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">모두 저장</button>
+                <button class="btn-save-and-close" data-short-code="${shortCode}" style="padding: 8px 15px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">저장 후 닫기</button>
             </div>
             
             <div class="keyword-list" id="keyword-list-${shortCode}">
-                ${keywords.length > 0 ? keywords.map((keyword, kwIndex) => {
-                    const kwId = keyword.keyword_id || kwIndex;
-                    // 모달 input은 수정 가능하므로 원본 값 사용
-                    const query = keyword.query_keyword || keyword.query || '';
-                    // 각 키워드의 link_id 사용 (firstLinkId 대신)
-                    const keywordLinkId = keyword.link_id || firstLinkId;
+                ${keywords.length > 0 ? (() => {
+                    // keyword_id로 순차 정렬
+                    const sortedKeywords = [...keywords].sort((a, b) => {
+                        const idA = a.keyword_id || 0;
+                        const idB = b.keyword_id || 0;
+                        return idA - idB;
+                    });
+                    return sortedKeywords.map((keyword, kwIndex) => {
+                        const kwId = keyword.keyword_id || kwIndex;
+                        // 모달 input은 수정 가능하므로 원본 값 사용
+                        const query = keyword.query_keyword || keyword.query || '';
+                        // 각 키워드의 link_id 사용 (firstLinkId 대신)
+                        const keywordLinkId = keyword.link_id || firstLinkId;
                     return `
-                        <div class="keyword-item" data-keyword-id="${kwId}" style="display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                        <div class="keyword-item" data-keyword-id="${kwId}" style="display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; align-items: center;">
+                            <input type="checkbox" class="keyword-checkbox" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="margin-right: 5px;">
                             <input type="text" class="keyword-query" value="${query}" placeholder="query 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
                             <button class="btn-save-keyword" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
                             <button class="btn-delete-keyword" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
                         </div>
                     `;
-                }).join('') : '<p style="color: #666; font-size: 14px;">등록된 키워드 조합이 없습니다.</p>'}
+                    }).join('');
+                })() : '<p style="color: #666; font-size: 14px;">등록된 키워드 조합이 없습니다.</p>'}
             </div>
         </div>
     `;
@@ -875,47 +909,212 @@ const showKeywordModal = (link) => {
         });
     }
     
-    // 키워드 저장/삭제 버튼 이벤트
-    modal.querySelectorAll('.btn-save-keyword').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const linkId = btn.getAttribute('data-link-id');
-            const keywordId = btn.getAttribute('data-keyword-id');
-            const keywordItem = btn.closest('.keyword-item');
-            const query = keywordItem.querySelector('.keyword-query').value.trim();
-            
-            if (!query) {
-                alert('query 키워드를 입력해주세요.');
+    // 키워드 저장/삭제 버튼 이벤트 바인딩
+    bindKeywordModalEvents(modal, shortCode, firstLinkId);
+    
+    // 모든 모달 버튼 이벤트 바인딩
+    bindAllModalButtonEvents(modal, shortCode, firstLinkId);
+    
+    // 기존 이벤트 바인딩 코드는 bindAllModalButtonEvents로 이동했으므로 제거
+    // 일괄삭제 버튼 이벤트 (제거됨 - bindAllModalButtonEvents로 이동)
+    /* const batchDeleteBtn = modal.querySelector('.btn-batch-delete-keywords');
+    if (batchDeleteBtn) {
+        batchDeleteBtn.addEventListener('click', async () => {
+            const checkedBoxes = modal.querySelectorAll('.keyword-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                alert('삭제할 키워드를 선택해주세요.');
                 return;
             }
             
-            if (!linkId) {
-                alert('링크 ID를 찾을 수 없습니다.');
+            if (confirm(`선택한 ${checkedBoxes.length}개의 키워드를 삭제하시겠습니까?`)) {
+                try {
+                    // keyword_id만 추출
+                    const keywordIds = Array.from(checkedBoxes)
+                        .map(checkbox => {
+                            const keywordId = checkbox.getAttribute('data-keyword-id');
+                            return keywordId ? parseInt(keywordId, 10) : null;
+                        })
+                        .filter(id => id !== null);
+                    
+                    if (keywordIds.length === 0) {
+                        alert('유효한 키워드 ID를 찾을 수 없습니다.');
+                        return;
+                    }
+                    
+                    console.log('배치 삭제 요청 keyword_ids:', keywordIds);
+                    
+                    // 배치 삭제 API 호출
+                    const response = await fetch(`${API_BASE_URL}/rewards/keywords/batch`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({
+                            keyword_ids: keywordIds
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('배치 삭제 성공:', data);
+                        
+                        const deletedCount = data.data?.deleted_count || data.deleted_count || keywordIds.length;
+                        const failedCount = data.data?.failed_count || 0;
+                        
+                    if (failedCount > 0) {
+                        alert(`${deletedCount}개 삭제 성공, ${failedCount}개 실패`);
+                    } else {
+                        alert(`${deletedCount}개의 키워드가 삭제되었습니다.`);
+                    }
+                    
+                    // 백엔드 반영 시간 확보를 위한 지연 후 모달 내부만 업데이트
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    await refreshKeywordModal(shortCode, modal);
+                    } else {
+                        let errorMessage = `서버 오류 (${response.status})`;
+                        try {
+                            const errorText = await response.text();
+                            if (errorText) {
+                                try {
+                                    const errorData = JSON.parse(errorText);
+                                    errorMessage = errorData.detail || errorData.message || errorText;
+                                } catch (e) {
+                                    errorMessage = errorText;
+                                }
+                            }
+                        } catch (e) {
+                            console.error('오류 메시지 파싱 실패:', e);
+                        }
+                        
+                        console.error('배치 삭제 실패:', response.status, errorMessage);
+                        alert(`키워드 삭제 실패: ${errorMessage}`);
+                    }
+                } catch (error) {
+                    console.error('일괄 삭제 오류:', error);
+                    alert('일괄 삭제 중 오류가 발생했습니다.');
+                }
+            }
+        });
+    }
+    
+    // 모두 저장 버튼 이벤트
+    const saveAllBtn = modal.querySelector('.btn-save-all-keywords');
+    if (saveAllBtn) {
+        saveAllBtn.addEventListener('click', async () => {
+            const keywordItems = modal.querySelectorAll('.keyword-item');
+            const keywordsToSave = [];
+            
+            for (const item of keywordItems) {
+                const query = item.querySelector('.keyword-query').value.trim();
+                if (!query) continue;
+                
+                const keywordId = item.getAttribute('data-keyword-id');
+                
+                // 새 키워드(new_로 시작)는 제외 (개별 저장 필요)
+                if (keywordId && !keywordId.toString().startsWith('new_')) {
+                    keywordsToSave.push({
+                        keyword_id: parseInt(keywordId, 10),
+                        query: query
+                    });
+                }
+            }
+            
+            if (keywordsToSave.length === 0) {
+                alert('저장할 키워드가 없습니다.');
                 return;
             }
-
-            await saveKeyword(linkId, keywordId, query);
+            
+            try {
+                console.log('배치 저장 요청 (PATCH):', keywordsToSave);
+                
+                // PATCH 배치 저장 API 호출
+                const response = await fetch(`${API_BASE_URL}/rewards/keywords/batch`, {
+                    method: 'PATCH',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        keywords: keywordsToSave
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('배치 저장 성공:', data);
+                    
+                    const savedCount = data.data?.saved_count || data.saved_count || keywordsToSave.length;
+                    const failedCount = data.data?.failed_count || 0;
+                    
+                    if (failedCount > 0) {
+                        alert(`${savedCount}개 저장 성공, ${failedCount}개 실패`);
+                    } else {
+                        alert(`${savedCount}개의 키워드가 저장되었습니다.`);
+                    }
+                    
+                    // 백엔드 반영 시간 확보를 위한 지연 후 모달 내부만 업데이트
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    await refreshKeywordModal(shortCode, modal);
+                } else {
+                    let errorMessage = `서버 오류 (${response.status})`;
+                    try {
+                        const errorText = await response.text();
+                        if (errorText) {
+                            try {
+                                const errorData = JSON.parse(errorText);
+                                errorMessage = errorData.detail || errorData.message || errorText;
+                            } catch (e) {
+                                errorMessage = errorText;
+                            }
+                        }
+                    } catch (e) {
+                        console.error('오류 메시지 파싱 실패:', e);
+                    }
+                    
+                    console.error('배치 저장 실패:', response.status, errorMessage);
+                    alert(`키워드 저장 실패: ${errorMessage}`);
+                }
+            } catch (error) {
+                console.error('일괄 저장 오류:', error);
+                alert('일괄 저장 중 오류가 발생했습니다.');
+            }
+        });
+    }
+    
+    // 저장 후 닫기 버튼 이벤트
+    const saveAndCloseBtn = modal.querySelector('.btn-save-and-close');
+    if (saveAndCloseBtn) {
+        saveAndCloseBtn.addEventListener('click', async () => {
+            // 먼저 모두 저장
+            const keywordItems = modal.querySelectorAll('.keyword-item');
+            const savePromises = [];
+            
+            for (const item of keywordItems) {
+                const query = item.querySelector('.keyword-query').value.trim();
+                if (!query) continue;
+                
+                const saveBtn = item.querySelector('.btn-save-keyword');
+                if (!saveBtn) continue;
+                
+                const linkId = saveBtn.getAttribute('data-link-id');
+                const keywordId = item.getAttribute('data-keyword-id');
+                
+                if (linkId && keywordId) {
+                    // showAlert를 false로 전달하여 개별 alert 비활성화
+                    savePromises.push(saveKeyword(linkId, keywordId, query, null, null, false));
+                }
+            }
+            
+            if (savePromises.length > 0) {
+                try {
+                    await Promise.all(savePromises);
+                    alert('모든 키워드가 저장되었습니다.');
+                } catch (error) {
+                    console.error('저장 오류:', error);
+                    alert('일부 키워드 저장 중 오류가 발생했습니다.');
+                }
+            }
+            
+            // 모달 닫기 및 목록 새로고침
             document.body.removeChild(modal);
             loadLinkList();
         });
-    });
-    
-    modal.querySelectorAll('.btn-delete-keyword').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const linkId = btn.getAttribute('data-link-id');
-            const keywordId = btn.getAttribute('data-keyword-id');
-            
-            if (!linkId) {
-                alert('링크 ID를 찾을 수 없습니다.');
-                return;
-            }
-            
-            if (confirm('이 키워드 조합을 삭제하시겠습니까?')) {
-                await deleteKeyword(linkId, keywordId);
-                document.body.removeChild(modal);
-                loadLinkList();
-            }
-        });
-    });
+    } */
 };
 
 // 키워드 행 추가
@@ -927,10 +1126,11 @@ const addKeywordRow = (shortCode, linkId, modal) => {
     const keywordRow = document.createElement('div');
     keywordRow.className = 'keyword-item';
     keywordRow.setAttribute('data-keyword-id', newKeywordId);
-    keywordRow.style.cssText = 'display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px;';
+    keywordRow.style.cssText = 'display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; align-items: center;';
     keywordRow.innerHTML = `
+        <input type="checkbox" class="keyword-checkbox" data-link-id="${linkId}" data-keyword-id="${newKeywordId}" style="margin-right: 5px;">
         <input type="text" class="keyword-query" value="" placeholder="query 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
-        <button class="btn-save-keyword" data-link-id="${linkId}" data-keyword-id="${newKeywordId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
+        <button class="btn-save-keyword" data-short-code="${shortCode}" data-link-id="${linkId}" data-keyword-id="${newKeywordId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
         <button class="btn-delete-keyword" data-link-id="${linkId}" data-keyword-id="${newKeywordId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
     `;
 
@@ -945,11 +1145,7 @@ const addKeywordRow = (shortCode, linkId, modal) => {
             return;
         }
 
-        await saveKeyword(linkId, newKeywordId, query);
-        if (modal) {
-            document.body.removeChild(modal);
-        }
-        loadLinkList();
+        await saveKeyword(linkId, newKeywordId, query, shortCode, modal);
     });
 
     keywordRow.querySelector('.btn-delete-keyword').addEventListener('click', () => {
@@ -958,7 +1154,7 @@ const addKeywordRow = (shortCode, linkId, modal) => {
 };
 
 // 키워드 저장
-const saveKeyword = async (linkId, keywordId, query) => {
+const saveKeyword = async (linkId, keywordId, query, shortCode = null, modal = null, showAlert = true) => {
     try {
         // 새 키워드인 경우
         const isNew = keywordId.toString().startsWith('new_');
@@ -989,8 +1185,24 @@ const saveKeyword = async (linkId, keywordId, query) => {
         if (response.ok) {
             const data = await response.json();
             console.log('키워드 저장 성공:', data);
-            alert('키워드가 저장되었습니다.');
-            loadLinkList(); // 목록 새로고침
+            
+            // 모달이 열려있고 shortCode가 있으면 모달만 업데이트
+            if (modal && shortCode) {
+                // 백엔드 반영 시간 확보를 위한 지연
+                await new Promise(resolve => setTimeout(resolve, 300));
+                await refreshKeywordModal(shortCode, modal);
+                // showAlert가 true일 때만 alert 표시
+                if (showAlert) {
+                    alert('키워드가 저장되었습니다.');
+                }
+            } else {
+                // 모달이 없으면 전체 목록 새로고침
+                // showAlert가 true일 때만 alert 표시
+                if (showAlert) {
+                    alert('키워드가 저장되었습니다.');
+                }
+                loadLinkList();
+            }
         } else {
             let errorMessage = `서버 오류 (${response.status})`;
             try {
@@ -1040,8 +1252,8 @@ const deleteKeyword = async (linkId, keywordId) => {
 
         if (response.ok) {
             console.log('키워드 삭제 성공');
-            alert('키워드가 삭제되었습니다.');
-            loadLinkList(); // 목록 새로고침
+            // alert는 호출하는 쪽에서 처리
+            return true;
         } else {
             let errorMessage = `서버 오류 (${response.status})`;
             try {
@@ -1069,12 +1281,350 @@ const deleteKeyword = async (linkId, keywordId) => {
             }
             
             console.error('키워드 삭제 실패:', response.status, errorMessage);
-            alert(`키워드 삭제 실패: ${errorMessage}`);
+            throw new Error(errorMessage);
         }
     } catch (error) {
         console.error('키워드 삭제 API 호출 오류:', error);
-        alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
+        throw error;
     }
+};
+
+// 모달 내부 키워드 목록만 새로고침
+const refreshKeywordModal = async (shortCode, modal) => {
+    try {
+        // 링크 목록 다시 로드
+        const response = await fetch(`${API_BASE_URL}/rewards/links?short_code=${shortCode}`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const links = data.data?.links || data.links || [];
+            const link = links.find(l => l.short_code === shortCode);
+            
+            if (link) {
+                // 키워드 리스트 영역만 업데이트
+                const keywordList = modal.querySelector(`#keyword-list-${shortCode}`);
+                if (keywordList) {
+                    let keywords = link.keywords || [];
+                    // keyword_id로 순차 정렬
+                    keywords = keywords.sort((a, b) => {
+                        const idA = a.keyword_id || 0;
+                        const idB = b.keyword_id || 0;
+                        return idA - idB;
+                    });
+                    const firstLinkId = link.link_ids && link.link_ids.length > 0 ? link.link_ids[0] : null;
+                    
+                    keywordList.innerHTML = keywords.length > 0 ? keywords.map((keyword, kwIndex) => {
+                        const kwId = keyword.keyword_id || kwIndex;
+                        const query = keyword.query_keyword || keyword.query || '';
+                        const keywordLinkId = keyword.link_id || firstLinkId;
+                        return `
+                            <div class="keyword-item" data-keyword-id="${kwId}" style="display: flex; gap: 10px; margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; align-items: center;">
+                                <input type="checkbox" class="keyword-checkbox" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="margin-right: 5px;">
+                                <input type="text" class="keyword-query" value="${query}" placeholder="query 키워드" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                                <button class="btn-save-keyword" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">저장</button>
+                                <button class="btn-delete-keyword" data-short-code="${shortCode}" data-link-id="${keywordLinkId}" data-keyword-id="${kwId}" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">삭제</button>
+                            </div>
+                        `;
+                    }).join('') : '<p style="color: #666; font-size: 14px;">등록된 키워드 조합이 없습니다.</p>';
+                    
+                    // 이벤트 다시 바인딩
+                    bindKeywordModalEvents(modal, shortCode, firstLinkId);
+                    
+                    // 모든 모달 버튼 이벤트도 다시 바인딩
+                    bindAllModalButtonEvents(modal, shortCode, firstLinkId);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('모달 새로고침 오류:', error);
+    }
+};
+
+// 모든 모달 버튼 이벤트 바인딩 함수
+const bindAllModalButtonEvents = (modal, shortCode, firstLinkId) => {
+    // 일괄삭제 버튼 이벤트
+    const batchDeleteBtn = modal.querySelector('.btn-batch-delete-keywords');
+    if (batchDeleteBtn) {
+        // 기존 이벤트 리스너 제거 (중복 방지)
+        const newBatchDeleteBtn = batchDeleteBtn.cloneNode(true);
+        batchDeleteBtn.parentNode.replaceChild(newBatchDeleteBtn, batchDeleteBtn);
+        
+        newBatchDeleteBtn.addEventListener('click', async () => {
+            const checkedBoxes = modal.querySelectorAll('.keyword-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                alert('삭제할 키워드를 선택해주세요.');
+                return;
+            }
+            
+            if (confirm(`선택한 ${checkedBoxes.length}개의 키워드를 삭제하시겠습니까?`)) {
+                try {
+                    // keyword_id만 추출
+                    const keywordIds = Array.from(checkedBoxes)
+                        .map(checkbox => {
+                            const keywordId = checkbox.getAttribute('data-keyword-id');
+                            return keywordId ? parseInt(keywordId, 10) : null;
+                        })
+                        .filter(id => id !== null);
+                    
+                    if (keywordIds.length === 0) {
+                        alert('유효한 키워드 ID를 찾을 수 없습니다.');
+                        return;
+                    }
+                    
+                    console.log('배치 삭제 요청 keyword_ids:', keywordIds);
+                    
+                    // 배치 삭제 API 호출
+                    const response = await fetch(`${API_BASE_URL}/rewards/keywords/batch`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({
+                            keyword_ids: keywordIds
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('배치 삭제 성공:', data);
+                        
+                        const deletedCount = data.data?.deleted_count || data.deleted_count || keywordIds.length;
+                        const failedCount = data.data?.failed_count || 0;
+                        
+                        if (failedCount > 0) {
+                            alert(`${deletedCount}개 삭제 성공, ${failedCount}개 실패`);
+                        } else {
+                            alert(`${deletedCount}개의 키워드가 삭제되었습니다.`);
+                        }
+                        
+                        // 백엔드 반영 시간 확보를 위한 지연 후 모달 내부만 업데이트
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                        await refreshKeywordModal(shortCode, modal);
+                    } else {
+                        let errorMessage = `서버 오류 (${response.status})`;
+                        try {
+                            const errorText = await response.text();
+                            if (errorText) {
+                                try {
+                                    const errorData = JSON.parse(errorText);
+                                    errorMessage = errorData.detail || errorData.message || errorText;
+                                } catch (e) {
+                                    errorMessage = errorText;
+                                }
+                            }
+                        } catch (e) {
+                            console.error('오류 메시지 파싱 실패:', e);
+                        }
+                        
+                        console.error('배치 삭제 실패:', response.status, errorMessage);
+                        alert(`키워드 삭제 실패: ${errorMessage}`);
+                    }
+                } catch (error) {
+                    console.error('일괄 삭제 오류:', error);
+                    alert('일괄 삭제 중 오류가 발생했습니다.');
+                }
+            }
+        });
+    }
+    
+    // 모두 저장 버튼 이벤트
+    const saveAllBtn = modal.querySelector('.btn-save-all-keywords');
+    if (saveAllBtn) {
+        // 기존 이벤트 리스너 제거 (중복 방지)
+        const newSaveAllBtn = saveAllBtn.cloneNode(true);
+        saveAllBtn.parentNode.replaceChild(newSaveAllBtn, saveAllBtn);
+        
+        newSaveAllBtn.addEventListener('click', async () => {
+            const keywordItems = modal.querySelectorAll('.keyword-item');
+            const keywordsToSave = [];
+            
+            for (const item of keywordItems) {
+                const query = item.querySelector('.keyword-query').value.trim();
+                if (!query) continue;
+                
+                const keywordId = item.getAttribute('data-keyword-id');
+                
+                // 새 키워드(new_로 시작)는 제외 (개별 저장 필요)
+                if (keywordId && !keywordId.toString().startsWith('new_')) {
+                    keywordsToSave.push({
+                        keyword_id: parseInt(keywordId, 10),
+                        query: query
+                    });
+                }
+            }
+            
+            if (keywordsToSave.length === 0) {
+                alert('저장할 키워드가 없습니다.');
+                return;
+            }
+            
+            try {
+                console.log('배치 저장 요청 (PATCH):', keywordsToSave);
+                
+                // PATCH 배치 저장 API 호출
+                const response = await fetch(`${API_BASE_URL}/rewards/keywords/batch`, {
+                    method: 'PATCH',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        keywords: keywordsToSave
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('배치 저장 성공:', data);
+                    
+                    const savedCount = data.data?.saved_count || data.saved_count || keywordsToSave.length;
+                    const failedCount = data.data?.failed_count || 0;
+                    
+                    if (failedCount > 0) {
+                        alert(`${savedCount}개 저장 성공, ${failedCount}개 실패`);
+                    } else {
+                        alert(`${savedCount}개의 키워드가 저장되었습니다.`);
+                    }
+                    
+                    // 백엔드 반영 시간 확보를 위한 지연 후 모달 내부만 업데이트
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    await refreshKeywordModal(shortCode, modal);
+                } else {
+                    let errorMessage = `서버 오류 (${response.status})`;
+                    try {
+                        const errorText = await response.text();
+                        if (errorText) {
+                            try {
+                                const errorData = JSON.parse(errorText);
+                                errorMessage = errorData.detail || errorData.message || errorText;
+                            } catch (e) {
+                                errorMessage = errorText;
+                            }
+                        }
+                    } catch (e) {
+                        console.error('오류 메시지 파싱 실패:', e);
+                    }
+                    
+                    console.error('배치 저장 실패:', response.status, errorMessage);
+                    alert(`키워드 저장 실패: ${errorMessage}`);
+                }
+            } catch (error) {
+                console.error('일괄 저장 오류:', error);
+                alert('일괄 저장 중 오류가 발생했습니다.');
+            }
+        });
+    }
+    
+    // 저장 후 닫기 버튼 이벤트
+    const saveAndCloseBtn = modal.querySelector('.btn-save-and-close');
+    if (saveAndCloseBtn) {
+        // 기존 이벤트 리스너 제거 (중복 방지)
+        const newSaveAndCloseBtn = saveAndCloseBtn.cloneNode(true);
+        saveAndCloseBtn.parentNode.replaceChild(newSaveAndCloseBtn, saveAndCloseBtn);
+        
+        newSaveAndCloseBtn.addEventListener('click', async () => {
+            // 먼저 모두 저장
+            const keywordItems = modal.querySelectorAll('.keyword-item');
+            const savePromises = [];
+            
+            for (const item of keywordItems) {
+                const query = item.querySelector('.keyword-query').value.trim();
+                if (!query) continue;
+                
+                const saveBtn = item.querySelector('.btn-save-keyword');
+                if (!saveBtn) continue;
+                
+                const linkId = saveBtn.getAttribute('data-link-id');
+                const keywordId = item.getAttribute('data-keyword-id');
+                
+                if (linkId && keywordId) {
+                    // showAlert를 false로 전달하여 개별 alert 비활성화
+                    savePromises.push(saveKeyword(linkId, keywordId, query, null, null, false));
+                }
+            }
+            
+            if (savePromises.length > 0) {
+                try {
+                    await Promise.all(savePromises);
+                    alert('모든 키워드가 저장되었습니다.');
+                } catch (error) {
+                    console.error('저장 오류:', error);
+                    alert('일부 키워드 저장 중 오류가 발생했습니다.');
+                }
+            }
+            
+            // 모달 닫기 및 목록 새로고침
+            document.body.removeChild(modal);
+            loadLinkList();
+        });
+    }
+    
+    // 키워드 추가 버튼 이벤트
+    const addKeywordBtn = modal.querySelector('.btn-add-keyword');
+    if (addKeywordBtn && firstLinkId) {
+        // 기존 이벤트 리스너 제거 (중복 방지)
+        const newAddKeywordBtn = addKeywordBtn.cloneNode(true);
+        addKeywordBtn.parentNode.replaceChild(newAddKeywordBtn, addKeywordBtn);
+        
+        newAddKeywordBtn.addEventListener('click', () => {
+            addKeywordRow(shortCode, firstLinkId, modal);
+        });
+    }
+};
+
+// 모달 이벤트 바인딩 함수 분리
+const bindKeywordModalEvents = (modal, shortCode, firstLinkId) => {
+    // 저장 버튼 이벤트
+    modal.querySelectorAll('.btn-save-keyword').forEach(btn => {
+        // 기존 이벤트 리스너 제거 (중복 방지)
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        newBtn.addEventListener('click', async () => {
+            const linkId = newBtn.getAttribute('data-link-id');
+            const keywordId = newBtn.getAttribute('data-keyword-id');
+            const keywordItem = newBtn.closest('.keyword-item');
+            const query = keywordItem.querySelector('.keyword-query').value.trim();
+            
+            if (!query) {
+                alert('query 키워드를 입력해주세요.');
+                return;
+            }
+            
+            if (!linkId) {
+                alert('링크 ID를 찾을 수 없습니다.');
+                return;
+            }
+
+            await saveKeyword(linkId, keywordId, query, shortCode, modal);
+        });
+    });
+    
+    // 삭제 버튼 이벤트
+    modal.querySelectorAll('.btn-delete-keyword').forEach(btn => {
+        // 기존 이벤트 리스너 제거 (중복 방지)
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        newBtn.addEventListener('click', async () => {
+            const linkId = newBtn.getAttribute('data-link-id');
+            const keywordId = newBtn.getAttribute('data-keyword-id');
+            
+            if (!linkId) {
+                alert('링크 ID를 찾을 수 없습니다.');
+                return;
+            }
+            
+            if (confirm('이 키워드 조합을 삭제하시겠습니까?')) {
+                try {
+                    await deleteKeyword(linkId, keywordId);
+                    alert('키워드가 삭제되었습니다.');
+                    // 백엔드 반영 시간 확보를 위한 지연 후 모달 내부만 업데이트
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    await refreshKeywordModal(shortCode, modal);
+                } catch (error) {
+                    alert(`키워드 삭제 실패: ${error.message || '알 수 없는 오류'}`);
+                }
+            }
+        });
+    });
 };
 
 // 링크 삭제 (short_code 기반)
@@ -1132,5 +1682,187 @@ const deleteLink = async (shortCode) => {
         console.error('링크 삭제 API 호출 오류:', error);
         alert('서버 연결에 실패했습니다. 네트워크를 확인해주세요.');
         throw error;
+    }
+};
+
+// 링크 다량 생성 모달 표시
+const showBulkCreateLinkModal = () => {
+    const modal = document.createElement('div');
+    modal.id = 'bulk-create-link-modal';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center;';
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 30px; border-radius: 8px; max-width: 900px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>링크 다량 생성</h3>
+                <button id="close-bulk-create-modal" style="padding: 5px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">닫기</button>
+            </div>
+            
+            <div style="margin-bottom: 15px; padding: 10px; background: #f0f8ff; border-radius: 4px;">
+                <strong>안내:</strong> product_name과 nvmid를 입력하세요. 제출하면 백엔드가 자동으로 링크를 생성합니다.
+            </div>
+            
+            <div id="bulk-link-list" style="margin-bottom: 15px;">
+                <!-- 동적으로 추가되는 입력 행들 -->
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <button id="add-bulk-link-row-btn" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">+ 행 추가</button>
+            </div>
+            
+            <div style="text-align: right; margin-top: 20px;">
+                <button id="submit-bulk-create-btn" style="padding: 10px 20px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold;">제출</button>
+                <button id="cancel-bulk-create-btn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-left: 10px;">취소</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 초기 행 하나 추가
+    addBulkLinkRow(modal);
+    
+    // 닫기 버튼
+    modal.querySelector('#close-bulk-create-modal').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+    
+    // 취소 버튼
+    modal.querySelector('#cancel-bulk-create-btn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+    
+    // 모달 외부 클릭 시 닫기
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+    
+    // 행 추가 버튼
+    modal.querySelector('#add-bulk-link-row-btn').addEventListener('click', () => {
+        addBulkLinkRow(modal);
+    });
+    
+    // 제출 버튼
+    modal.querySelector('#submit-bulk-create-btn').addEventListener('click', async () => {
+        await submitBulkCreateLinks(modal);
+    });
+};
+
+// 다량 생성 모달에 행 추가
+const addBulkLinkRow = (modal) => {
+    const container = modal.querySelector('#bulk-link-list');
+    if (!container) return;
+    
+    const rowId = `bulk_row_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const row = document.createElement('div');
+    row.className = 'bulk-link-row';
+    row.setAttribute('data-row-id', rowId);
+    row.style.cssText = 'display: flex; gap: 10px; align-items: center; padding: 10px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px;';
+    
+    row.innerHTML = `
+        <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 5px; font-size: 12px; font-weight: 500;">상품명 (product_name) <span style="color: red;">*</span></label>
+            <input type="text" class="bulk-product-name" placeholder="상품명을 입력하세요" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;" required>
+        </div>
+        <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 5px; font-size: 12px; font-weight: 500;">네이버 상품ID (nvmid) <span style="color: red;">*</span></label>
+            <input type="text" class="bulk-nvmid" placeholder="nvmid를 입력하세요" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;" required>
+        </div>
+        <button type="button" class="btn-remove-bulk-row" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; margin-top: 20px;">X</button>
+    `;
+    
+    container.appendChild(row);
+    
+    // 삭제 버튼 이벤트
+    row.querySelector('.btn-remove-bulk-row').addEventListener('click', () => {
+        row.remove();
+    });
+};
+
+// 다량 생성 제출
+const submitBulkCreateLinks = async (modal) => {
+    try {
+        const rows = modal.querySelectorAll('.bulk-link-row');
+        const linkData = [];
+        
+        // 각 행에서 데이터 수집
+        rows.forEach(row => {
+            const productName = row.querySelector('.bulk-product-name').value.trim();
+            const nvmid = row.querySelector('.bulk-nvmid').value.trim();
+            
+            if (productName && nvmid) {
+                linkData.push({
+                    product_name: productName,
+                    nvmid: nvmid
+                });
+            }
+        });
+        
+        if (linkData.length === 0) {
+            alert('최소 1개 이상의 데이터를 입력해주세요.');
+            return;
+        }
+        
+        // 백엔드 API 호출
+        const url = `${API_BASE_URL}/rewards/links/batch`;
+        const requestBody = {
+            links: linkData
+        };
+        
+        console.log('링크 다량 생성 API 호출:', url);
+        console.log('요청 본문:', JSON.stringify(requestBody, null, 2));
+        console.log(`생성할 링크 수: ${linkData.length}개`);
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(requestBody)
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('링크 다량 생성 성공:', data);
+            
+            const createdCount = data.data?.created_count || data.created_count || linkData.length;
+            alert(`링크가 생성되었습니다!\n\n생성된 링크 수: ${createdCount}개`);
+            
+            // 모달 닫기
+            document.body.removeChild(modal);
+            
+            // 목록 새로고침
+            loadLinkList();
+        } else {
+            let errorMessage = `서버 오류 (${response.status})`;
+            try {
+                const errorText = await response.text();
+                console.error('서버 응답:', errorText);
+                if (errorText) {
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        if (typeof errorData === 'string') {
+                            errorMessage = errorData;
+                        } else if (errorData.message && typeof errorData.message === 'string') {
+                            errorMessage = errorData.message;
+                        } else if (errorData.detail && typeof errorData.detail === 'string') {
+                            errorMessage = errorData.detail;
+                        } else {
+                            errorMessage = JSON.stringify(errorData);
+                        }
+                    } catch (e) {
+                        errorMessage = errorText;
+                    }
+                }
+            } catch (e) {
+                console.error('오류 메시지 파싱 실패:', e);
+            }
+            
+            console.error('링크 다량 생성 실패:', response.status, errorMessage);
+            alert(`링크 다량 생성 실패: ${errorMessage}\n\n콘솔을 확인하여 상세 오류를 확인하세요.`);
+        }
+    } catch (error) {
+        console.error('링크 다량 생성 프로세스 오류:', error);
+        alert(`링크 다량 생성 중 오류가 발생했습니다: ${error.message}`);
     }
 };

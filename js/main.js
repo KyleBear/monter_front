@@ -166,9 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'reward':
                 initRewardPage(pageContent);
                 break;
-            case 'reward-mgmt':
-                initRewardMgmtPage(pageContent);
-                break;
+            // case 'reward-mgmt':
+            //     initRewardMgmtPage(pageContent);
+            //     break;
             case 'reward-mgmt-link':
                 initRewardMgmtLinkPage(pageContent);
                 break;

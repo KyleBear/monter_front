@@ -302,7 +302,7 @@ export const initAdPage = (container) => {
     container.innerHTML = `
         <div class="account-info">
             <strong>광고관리</strong><br>
-            진행 중인 광고의 연장·수정·삭제 등의 관리 작업을 할 수 있습니다.
+            진행 중인 광고의 연장·수정·환불 등의 관리 작업을 할 수 있습니다.
         </div>
 
         <div class="account-status">
@@ -352,7 +352,7 @@ export const initAdPage = (container) => {
             <div class="selected-count"><span id="select-count">0</span>개 선택됨</div>
             <div class="table-actions">
                 <button class="btn-register" style="background-color: #17a2b8;">수정</button>
-                <button class="btn-delete">삭제</button>
+                <button class="btn-delete">환불</button>
                 <button class="btn-extend" id="extend-btn">연장</button>
                 <button class="btn-register" id="open-register-btn">등록</button>
                 <button class="btn-register" id="csv-upload-btn" style="background-color: #28a745; display: none;">CSV 업로드</button>
@@ -502,7 +502,7 @@ export const initAdPage = (container) => {
     if (userRole === 'advertiser') {
         // 광고주: 등록 버튼 숨기기
         if (openRegBtn) openRegBtn.style.display = 'none';
-        // 광고주: 삭제 버튼 숨기기
+        // 광고주: 환불 버튼 숨기기
         if (deleteBtn) deleteBtn.style.display = 'none';
     }
 };
@@ -1261,12 +1261,12 @@ const initAdEvents = () => {
         });
     }
 
-    // 삭제 버튼
+    // 환불 버튼
     if (deleteBtn) {
         deleteBtn.addEventListener('click', async () => {
             const rowChecks = document.querySelectorAll('.row-check:checked');
             if (rowChecks.length === 0) {
-                alert('삭제할 광고를 선택해주세요.');
+                alert('환불할 광고를 선택해주세요.');
                 return;
             }
             
@@ -1276,11 +1276,11 @@ const initAdEvents = () => {
             }).filter(id => id !== null);
             
             if (adIds.length === 0) {
-                alert('삭제할 광고를 선택해주세요.');
+                alert('환불할 광고를 선택해주세요.');
                 return;
             }
             
-            if (!confirm(`선택한 ${adIds.length}개의 광고를 삭제하시겠습니까?`)) {
+            if (!confirm(`선택한 ${adIds.length}개의 광고를 환불하시겠습니까?`)) {
                 return;
             }
             
@@ -1294,14 +1294,14 @@ const initAdEvents = () => {
                 });
                 
                 if (response.ok) {
-                    alert('선택한 광고가 삭제되었습니다.');
+                    alert('선택한 광고가 환불되었습니다.');
                     await loadAdList();
                 } else {
-                    const error = await response.json().catch(() => ({ message: '삭제 실패' }));
-                    alert(`삭제 실패: ${error.message || '서버 오류가 발생했습니다.'}`);
+                    const error = await response.json().catch(() => ({ message: '환불 실패' }));
+                    alert(`환불 실패: ${error.message || '서버 오류가 발생했습니다.'}`);
                 }
             } catch (error) {
-                console.error('삭제 API 호출 오류:', error);
+                console.error('환불 API 호출 오류:', error);
                 alert('서버 연결에 실패했습니다.');
             }
         });

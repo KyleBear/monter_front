@@ -55,6 +55,7 @@ export const initAccountPage = (container) => {
                         <th>비밀번호</th>
                         <th>권한</th>
                         <th style="display: none;">소속</th>
+                        <th>생성계정</th>
                         <th>수량</th>
                         <th>광고</th>
                         <th>메모</th>
@@ -254,6 +255,7 @@ const renderAccountTable = (accounts) => {
                 <td>${passwordDisplay}</td>
                 <td>${roleMap[account.role] || account.role || '-'}</td>
                 <td style="display: none;">${account.affiliation || '-'}</td>
+                <td>${account.parent_username || '-'}</td>                
                 <td>${account.ad_count || 0}</td>
                 <td>${account.active_ad_count > 0 ? '진행중' : '-'}</td>
                 <td>${account.memo || '-'}</td>

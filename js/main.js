@@ -99,11 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (rewardMgmtMenuItem) {
         // 임시로 숨김 처리
         rewardMgmtMenuItem.style.display = 'none';
-        // if (userRole === 'admin') {
-        //     rewardMgmtMenuItem.style.display = 'block';
-        // } else {
-        //     rewardMgmtMenuItem.style.display = 'none';
-        // }
+
     }
 
     // 3. 네비게이션 드롭다운

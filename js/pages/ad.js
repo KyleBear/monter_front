@@ -22,14 +22,12 @@ const updateAdStatus = (stats) => {
     const errorCount = document.getElementById('error-count');
     const pendingCount = document.getElementById('pending-count');
     const endingCount = document.getElementById('ending-count');
-    const endedCount = document.getElementById('ended-count');
     
     if (totalCount) totalCount.textContent = stats.total || 0;
     if (normalCount) normalCount.textContent = stats.normal || 0;
     if (errorCount) errorCount.textContent = stats.error || 0;
     if (pendingCount) pendingCount.textContent = stats.pending || 0;
     if (endingCount) endingCount.textContent = stats.ending || 0;
-    if (endedCount) endedCount.textContent = stats.ended || 0;
 };
 
 // 광고 테이블 렌더링
@@ -255,6 +253,9 @@ const loadAdList = async (searchParams = {}) => {
                 advertisements = data;
             }
             
+            // 종료된 광고 필터링 (status가 'ended'인 항목 제외)
+            advertisements = advertisements.filter(ad => ad.status !== 'ended');
+            
             console.log('테이블에 표시될 광고 개수:', advertisements.length);
             
             // 첫 번째 광고 데이터 확인 (slot 필드 포함 여부)
@@ -272,8 +273,7 @@ const loadAdList = async (searchParams = {}) => {
                 normal: advertisements.filter(ad => ad.status === 'normal').length,
                 error: advertisements.filter(ad => ad.status === 'error').length,
                 pending: advertisements.filter(ad => ad.status === 'pending').length,
-                ending: advertisements.filter(ad => ad.status === 'ending').length,
-                ended: advertisements.filter(ad => ad.status === 'ended').length
+                ending: advertisements.filter(ad => ad.status === 'ending').length
             };
             
             console.log('테이블 데이터 기반 통계:', stats);
@@ -325,10 +325,6 @@ export const initAdPage = (container) => {
             <div class="status-card">
                 <h4>종료예정</h4>
                 <div class="count" style="color: #fd7e14;" id="ending-count">0</div>
-            </div>
-            <div class="status-card">
-                <h4>종료</h4>
-                <div class="count" style="color: #6c757d;" id="ended-count">0</div>
             </div>
         </div>
 
